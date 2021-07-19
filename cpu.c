@@ -80,6 +80,140 @@ static inline gbstatus_e cpu_mem_write_word(gb_cpu_t *cpu, uint16_t addr, uint16
     return GBSTATUS_OK;
 }
 
+/// Sets 7th bit of the flags register
+#define SET_Z(val) (cpu->reg_f = (cpu->reg_f & 0x7F) | ((val) << 7))
+
+/// Sets 6th bit of the flags register
+#define SET_N(val) (cpu->reg_f = (cpu->reg_f & 0xBF) | ((val) << 6))
+
+/// Sets 5th bit of the flags register
+#define SET_H(val) (cpu->reg_f = (cpu->reg_f & 0xDF) | ((val) << 5))
+
+/// Sets 4th bit of the flags register
+#define SET_C(val) (cpu->reg_f = (cpu->reg_f & 0xEF) | ((val) << 4))
+
+/// Gets 7th bit of the flags register
+#define GET_Z() ((cpu->reg_f >> 7) & 0x1)
+
+/// Gets 6th bit of the flags register
+#define GET_N() ((cpu->reg_f >> 6) & 0x1)
+
+/// Gets 5th bit of the flags register
+#define GET_H() ((cpu->reg_f >> 5) & 0x1)
+
+/// Gets 4th bit of the flags register
+#define GET_C() ((cpu->reg_f >> 4) & 0x1)
+
+#define ZERO_CHECK(val) ((val & 0xFF) == 0)
+
+#define CHECK_CARRY_4(val)  (((val) >> 4)  != 0)
+#define CHECK_CARRY_8(val)  (((val) >> 8)  != 0)
+#define CHECK_CARRY_12(val) (((val) >> 12) != 0)
+#define CHECK_CARRY_16(val) (((val) >> 16) != 0)
+
+// There are common implementations of some instructions
+
+static void cpu_instr_add(gb_cpu_t *cpu, uint8_t value)
+{
+    SET_Z(ZERO_CHECK(cpu->reg_a + value));
+    SET_N(0);
+    SET_H(CHECK_CARRY_4((cpu->reg_a & 0xF) + (value & 0xF)));
+    SET_C(CHECK_CARRY_8(cpu->reg_a + value));
+
+    cpu->reg_a += value;
+}
+
+static void cpu_instr_adc(gb_cpu_t *cpu, uint8_t value)
+{
+    int carry = GET_C();
+
+    SET_Z(ZERO_CHECK(cpu->reg_a + value + carry));
+    SET_N(0);
+    SET_H(CHECK_CARRY_4((cpu->reg_a & 0xF) + (value & 0xF) + carry));
+    SET_C(CHECK_CARRY_8(cpu->reg_a + value + carry));
+
+    cpu->reg_a += value + carry;
+}
+
+static void cpu_instr_sub(gb_cpu_t *cpu, uint8_t value)
+{
+    SET_Z(cpu->reg_a == value);
+    SET_N(1);
+    SET_H((cpu->reg_a & 0xF) < (value & 0xF));
+    SET_C(cpu->reg_a < value);
+
+    cpu->reg_a -= value;
+}
+
+static void cpu_instr_cp(gb_cpu_t *cpu, uint8_t value)
+{
+    SET_Z(cpu->reg_a == value);
+    SET_N(1);
+    SET_H((cpu->reg_a & 0xF) < (value & 0xF));
+    SET_C(cpu->reg_a < value);
+}
+
+static void cpu_instr_sbc(gb_cpu_t *cpu, uint8_t value)
+{
+    int carry = GET_C();
+    int result = cpu->reg_a - value - carry;
+
+    SET_Z(ZERO_CHECK(result));
+    SET_N(1);
+    SET_H((cpu->reg_a & 0xF) - (value & 0xF) - carry < 0);
+    SET_C(result < 0);
+
+    cpu->reg_a = result;
+}
+
+static void cpu_instr_and(gb_cpu_t *cpu, uint8_t value)
+{
+    cpu->reg_a &= value;
+
+    SET_Z(cpu->reg_a == 0);
+    SET_N(0);
+    SET_H(1);
+    SET_C(0);
+}
+
+static void cpu_instr_or(gb_cpu_t *cpu, uint8_t value)
+{
+    cpu->reg_a |= value;
+
+    SET_Z(cpu->reg_a == 0);
+    SET_N(0);
+    SET_H(0);
+    SET_C(0);
+}
+
+static void cpu_instr_xor(gb_cpu_t *cpu, uint8_t value)
+{
+    cpu->reg_a ^= value;
+
+    SET_Z(cpu->reg_a == 0);
+    SET_N(0);
+    SET_H(0);
+    SET_C(0);
+}
+
+static void cpu_instr_inc(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    SET_Z(ZERO_CHECK(*value_ptr + 1));
+    SET_N(0);
+    SET_H((*value_ptr) & 0xF == 0xF);
+
+    (*value_ptr)++;
+}
+
+static void cpu_instr_dec(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    SET_Z(ZERO_CHECK(*value_ptr - 1));
+    SET_N(1);
+    SET_H((*value_ptr) & 0xF == 0);
+
+    (*value_ptr)--;
+}
+
 gbstatus_e cpu_step(gb_cpu_t *cpu)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -161,31 +295,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld c, c");
         break;
 
-    case 0x4a:
+    case 0x4A:
         cpu->reg_c = cpu->reg_d;
 
         DISASM("ld c, d");
         break;
 
-    case 0x4b:
+    case 0x4B:
         cpu->reg_c = cpu->reg_e;
 
         DISASM("ld c, e");
         break;
 
-    case 0x4c:
+    case 0x4C:
         cpu->reg_c = cpu->reg_h;
 
         DISASM("ld c, h");
         break;
 
-    case 0x4d:
+    case 0x4D:
         cpu->reg_c = cpu->reg_l;
 
         DISASM("ld c, l");
         break;
 
-    case 0x4f:
+    case 0x4F:
         cpu->reg_c = cpu->reg_a;
 
         DISASM("ld c, a");
@@ -245,31 +379,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld e, c");
         break;
 
-    case 0x5a:
+    case 0x5A:
         cpu->reg_e = cpu->reg_d;
 
         DISASM("ld e, d");
         break;
 
-    case 0x5b:
+    case 0x5B:
         cpu->reg_e = cpu->reg_e;
 
         DISASM("ld e, e");
         break;
 
-    case 0x5c:
+    case 0x5C:
         cpu->reg_e = cpu->reg_h;
 
         DISASM("ld e, h");
         break;
 
-    case 0x5d:
+    case 0x5D:
         cpu->reg_e = cpu->reg_l;
 
         DISASM("ld e, l");
         break;
 
-    case 0x5f:
+    case 0x5F:
         cpu->reg_e = cpu->reg_a;
 
         DISASM("ld e, a");
@@ -329,31 +463,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld l, c");
         break;
 
-    case 0x6a:
+    case 0x6A:
         cpu->reg_l = cpu->reg_d;
 
         DISASM("ld l, d");
         break;
 
-    case 0x6b:
+    case 0x6B:
         cpu->reg_l = cpu->reg_e;
 
         DISASM("ld l, e");
         break;
 
-    case 0x6c:
+    case 0x6C:
         cpu->reg_l = cpu->reg_h;
 
         DISASM("ld l, h");
         break;
 
-    case 0x6d:
+    case 0x6D:
         cpu->reg_l = cpu->reg_l;
 
         DISASM("ld l, l");
         break;
 
-    case 0x6f:
+    case 0x6F:
         cpu->reg_l = cpu->reg_a;
 
         DISASM("ld l, a");
@@ -371,31 +505,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld a, c");
         break;
 
-    case 0x7a:
+    case 0x7A:
         cpu->reg_a = cpu->reg_d;
 
         DISASM("ld a, d");
         break;
 
-    case 0x7b:
+    case 0x7B:
         cpu->reg_a = cpu->reg_e;
 
         DISASM("ld a, e");
         break;
 
-    case 0x7c:
+    case 0x7C:
         cpu->reg_a = cpu->reg_h;
 
         DISASM("ld a, h");
         break;
 
-    case 0x7d:
+    case 0x7D:
         cpu->reg_a = cpu->reg_l;
 
         DISASM("ld a, l");
         break;
 
-    case 0x7f:
+    case 0x7F:
         cpu->reg_a = cpu->reg_a;
 
         DISASM("ld a, a");
@@ -455,7 +589,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld b, (hl)");
         break;
 
-    case 0x4e:
+    case 0x4E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_c));
 
         DISASM("ld c, (hl)");
@@ -467,7 +601,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld d, (hl)");
         break;
 
-    case 0x5e:
+    case 0x5E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_e));
 
         DISASM("ld e, (hl)");
@@ -479,13 +613,13 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld h, (hl)");
         break;
 
-    case 0x6e:
+    case 0x6E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_l));
 
         DISASM("ld l, (hl)");
         break;
 
-    case 0x7e:
+    case 0x7E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_a));
 
         DISASM("ld a, (hl)");
@@ -503,7 +637,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld b, 0x%02x", imm_val8);
         break;
 
-    case 0x0e:
+    case 0x0E:
         GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
         cpu->pc++;
         cpu->reg_c = imm_val8;
@@ -519,7 +653,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld d, 0x%02x", imm_val8);
         break;
 
-    case 0x1e:
+    case 0x1E:
         GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
         cpu->pc++;
         cpu->reg_e = imm_val8;
@@ -535,7 +669,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld h, 0x%02x", imm_val8);
         break;
 
-    case 0x2e:
+    case 0x2E:
         GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
         cpu->pc++;
         cpu->reg_l = imm_val8;
@@ -543,7 +677,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld l, 0x%02x", imm_val8);
         break;
 
-    case 0x3e:
+    case 0x3E:
         GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
         cpu->pc++;
         cpu->reg_a = imm_val8;
@@ -580,26 +714,26 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld (hl--), a");
         break;
 
-    case 0x0a:
+    case 0x0A:
         GBCHK(cpu_mem_read(cpu, cpu->reg_bc, &cpu->reg_a));
 
         DISASM("ld a, (bc)");
         break;
 
-    case 0x1a:
+    case 0x1A:
         GBCHK(cpu_mem_read(cpu, cpu->reg_de, &cpu->reg_a));
 
         DISASM("ld a, (de)");
         break;
 
-    case 0x2a:
+    case 0x2A:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_a));
         cpu->reg_hl++;
 
         DISASM("ld a, (hl++)");
         break;
 
-    case 0x3a:
+    case 0x3A:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_a));
         cpu->reg_hl--;
 
@@ -612,10 +746,10 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
         GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8));
 
-        DISASM("ld (hl), 0x%02x");
+        DISASM("ld (hl), 0x%02x", imm_val8);
         break;
 
-    case 0xe0:
+    case 0xE0:
         GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
         cpu->pc++;
 
@@ -624,7 +758,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld (0xFF00 + 0x%02x), a", imm_val8);
         break;
 
-    case 0xf0:
+    case 0xF0:
         GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
         cpu->pc++;
 
@@ -633,19 +767,19 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld a, (0xFF00 + 0x%02x)", imm_val8);
         break;
 
-    case 0xe2:
+    case 0xE2:
         GBCHK(cpu_mem_write(cpu, 0xFF00 + cpu->reg_c, cpu->reg_a));
         
         DISASM("ld (0xFF00 + c), a");
         break;
 
-    case 0xf2:
+    case 0xF2:
         GBCHK(cpu_mem_read(cpu, 0xFF00 + cpu->reg_c, &cpu->reg_a));
 
         DISASM("ld a, (0xFF00 + c)");
         break;
 
-    case 0xea:
+    case 0xEA:
         GBCHK(cpu_mem_read_word(cpu, cpu->pc, &imm_val16));
         cpu->pc += 2;
 
@@ -654,7 +788,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld (0x%04x), a", imm_val16);
         break;
 
-    case 0xfa:
+    case 0xFA:
         GBCHK(cpu_mem_read_word(cpu, cpu->pc, &imm_val16));
         cpu->pc += 2;
 
@@ -708,7 +842,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
     // pop r16
 #pragma region
-    case 0xc1:
+    case 0xC1:
         GBCHK(cpu_mem_read_word(cpu, cpu->sp, &imm_val16));
         cpu->sp += 2;
 
@@ -717,7 +851,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("pop bc");
         break;
 
-    case 0xd1:
+    case 0xD1:
         GBCHK(cpu_mem_read_word(cpu, cpu->sp, &imm_val16));
         cpu->sp += 2;
 
@@ -726,7 +860,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("pop de");
         break;
 
-    case 0xe1:
+    case 0xE1:
         GBCHK(cpu_mem_read_word(cpu, cpu->sp, &imm_val16));
         cpu->sp += 2;
 
@@ -735,7 +869,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("pop hl");
         break;
 
-    case 0xf1:
+    case 0xF1:
         GBCHK(cpu_mem_read_word(cpu, cpu->sp, &imm_val16));
         cpu->sp += 2;
 
@@ -748,7 +882,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
     // push r16
 #pragma region
-    case 0xc5:
+    case 0xC5:
         sync_with_cpu(cpu->gb, 4); // internal timing
 
         cpu->sp -= 2;
@@ -757,7 +891,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("push bc");
         break;
 
-    case 0xd5:
+    case 0xD5:
         sync_with_cpu(cpu->gb, 4); // internal timing
 
         cpu->sp -= 2;
@@ -766,7 +900,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("push de");
         break;
 
-    case 0xe5:
+    case 0xE5:
         sync_with_cpu(cpu->gb, 4); // internal timing
         
         cpu->sp -= 2;
@@ -775,7 +909,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("push hl");
         break;
 
-    case 0xf5:
+    case 0xF5:
         sync_with_cpu(cpu->gb, 4); // internal timing
         
         cpu->sp -= 2;
@@ -795,12 +929,644 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("ld (0x%04x), sp", imm_val16);
         break;
 
-    case 0xf9:
+    case 0xF9:
         cpu->sp = cpu->reg_hl;
         sync_with_cpu(cpu->gb, 4); // internal timing
 
         DISASM("ld sp, hl");
         break;
+#pragma endregion
+#pragma endregion
+    
+    // 8-bit arithmetics
+#pragma region
+    // add a, r8
+#pragma region
+    case 0x80:
+        cpu_instr_add(cpu, cpu->reg_b);
+
+        DISASM("add a, b");
+        break;
+
+    case 0x81:
+        cpu_instr_add(cpu, cpu->reg_c);
+        
+        DISASM("add a, c");
+        break;
+
+    case 0x82:
+        cpu_instr_add(cpu, cpu->reg_d);
+        
+        DISASM("add a, d");
+        break;
+
+    case 0x83:
+        cpu_instr_add(cpu, cpu->reg_e);
+        
+        DISASM("add a, e");
+        break;
+
+    case 0x84:
+        cpu_instr_add(cpu, cpu->reg_h);
+        
+        DISASM("add a, h");
+        break;
+
+    case 0x85:
+        cpu_instr_add(cpu, cpu->reg_l);
+        
+        DISASM("add a, l");
+        break;
+
+    case 0x87:
+        cpu_instr_add(cpu, cpu->reg_a);
+        
+        DISASM("add a, a");
+        break;
+#pragma endregion
+
+    // adc a, r8
+#pragma region
+    case 0x88:
+        cpu_instr_adc(cpu, cpu->reg_b);
+
+        DISASM("adc a, b");
+        break;
+
+    case 0x89:
+        cpu_instr_adc(cpu, cpu->reg_c);
+        
+        DISASM("adc a, c");
+        break;
+
+    case 0x8A:
+        cpu_instr_adc(cpu, cpu->reg_d);
+        
+        DISASM("adc a, d");
+        break;
+
+    case 0x8B:
+        cpu_instr_adc(cpu, cpu->reg_e);
+        
+        DISASM("adc a, e");
+        break;
+
+    case 0x8C:
+        cpu_instr_adc(cpu, cpu->reg_h);
+        
+        DISASM("adc a, h");
+        break;
+
+    case 0x8D:
+        cpu_instr_adc(cpu, cpu->reg_l);
+        
+        DISASM("adc a, l");
+        break;
+
+    case 0x8F:
+        cpu_instr_adc(cpu, cpu->reg_a);
+        
+        DISASM("adc a, a");
+        break;
+#pragma endregion
+
+    // sub a, r8
+#pragma region
+    case 0x90:
+        cpu_instr_sub(cpu, cpu->reg_b);
+
+        DISASM("sub a, b");
+        break;
+
+    case 0x91:
+        cpu_instr_sub(cpu, cpu->reg_c);
+        
+        DISASM("sub a, c");
+        break;
+
+    case 0x92:
+        cpu_instr_sub(cpu, cpu->reg_d);
+        
+        DISASM("sub a, d");
+        break;
+
+    case 0x93:
+        cpu_instr_sub(cpu, cpu->reg_e);
+        
+        DISASM("sub a, e");
+        break;
+
+    case 0x94:
+        cpu_instr_sub(cpu, cpu->reg_h);
+        
+        DISASM("sub a, h");
+        break;
+
+    case 0x95:
+        cpu_instr_sub(cpu, cpu->reg_l);
+        
+        DISASM("sub a, l");
+        break;
+
+    case 0x97:
+        cpu_instr_sub(cpu, cpu->reg_a);
+        
+        DISASM("sub a, a");
+        break;
+#pragma endregion
+
+    // sbc a, r8
+#pragma region
+    case 0x98:
+        cpu_instr_sbc(cpu, cpu->reg_b);
+
+        DISASM("sbc a, b");
+        break;
+
+    case 0x99:
+        cpu_instr_sbc(cpu, cpu->reg_c);
+        
+        DISASM("sbc a, c");
+        break;
+
+    case 0x9A:
+        cpu_instr_sbc(cpu, cpu->reg_d);
+        
+        DISASM("sbc a, d");
+        break;
+
+    case 0x9B:
+        cpu_instr_sbc(cpu, cpu->reg_e);
+        
+        DISASM("sbc a, e");
+        break;
+
+    case 0x9C:
+        cpu_instr_sbc(cpu, cpu->reg_h);
+        
+        DISASM("sbc a, h");
+        break;
+
+    case 0x9D:
+        cpu_instr_sbc(cpu, cpu->reg_l);
+        
+        DISASM("sbc a, l");
+        break;
+
+    case 0x9F:
+        cpu_instr_sbc(cpu, cpu->reg_a);
+        
+        DISASM("sbc a, a");
+        break;
+#pragma endregion
+
+     // and a, r8
+#pragma region
+    case 0xA0:
+        cpu_instr_and(cpu, cpu->reg_b);
+
+        DISASM("and a, b");
+        break;
+
+    case 0xA1:
+        cpu_instr_and(cpu, cpu->reg_c);
+        
+        DISASM("and a, c");
+        break;
+
+    case 0xA2:
+        cpu_instr_and(cpu, cpu->reg_d);
+        
+        DISASM("and a, d");
+        break;
+
+    case 0xA3:
+        cpu_instr_and(cpu, cpu->reg_e);
+        
+        DISASM("and a, e");
+        break;
+
+    case 0xA4:
+        cpu_instr_and(cpu, cpu->reg_h);
+        
+        DISASM("and a, h");
+        break;
+
+    case 0xA5:
+        cpu_instr_and(cpu, cpu->reg_l);
+        
+        DISASM("and a, l");
+        break;
+
+    case 0xA7:
+        cpu_instr_and(cpu, cpu->reg_a);
+        
+        DISASM("and a, a");
+        break;
+#pragma endregion
+
+    // xor a, r8
+#pragma region
+    case 0xA8:
+        cpu_instr_xor(cpu, cpu->reg_b);
+
+        DISASM("xor a, b");
+        break;
+
+    case 0xA9:
+        cpu_instr_xor(cpu, cpu->reg_c);
+        
+        DISASM("xor a, c");
+        break;
+
+    case 0xAA:
+        cpu_instr_xor(cpu, cpu->reg_d);
+        
+        DISASM("xor a, d");
+        break;
+
+    case 0xAB:
+        cpu_instr_xor(cpu, cpu->reg_e);
+        
+        DISASM("xor a, e");
+        break;
+
+    case 0xAC:
+        cpu_instr_xor(cpu, cpu->reg_h);
+        
+        DISASM("xor a, h");
+        break;
+
+    case 0xAD:
+        cpu_instr_xor(cpu, cpu->reg_l);
+        
+        DISASM("xor a, l");
+        break;
+
+    case 0xAF:
+        cpu_instr_xor(cpu, cpu->reg_a);
+        
+        DISASM("xor a, a");
+        break;
+#pragma endregion
+
+    // or a, r8
+#pragma region
+    case 0xB0:
+        cpu_instr_or(cpu, cpu->reg_b);
+
+        DISASM("or a, b");
+        break;
+
+    case 0xB1:
+        cpu_instr_or(cpu, cpu->reg_c);
+        
+        DISASM("or a, c");
+        break;
+
+    case 0xB2:
+        cpu_instr_or(cpu, cpu->reg_d);
+        
+        DISASM("or a, d");
+        break;
+
+    case 0xB3:
+        cpu_instr_or(cpu, cpu->reg_e);
+        
+        DISASM("or a, e");
+        break;
+
+    case 0xB4:
+        cpu_instr_or(cpu, cpu->reg_h);
+        
+        DISASM("or a, h");
+        break;
+
+    case 0xB5:
+        cpu_instr_or(cpu, cpu->reg_l);
+        
+        DISASM("or a, l");
+        break;
+
+    case 0xB7:
+        cpu_instr_or(cpu, cpu->reg_a);
+        
+        DISASM("or a, a");
+        break;
+#pragma endregion
+
+    // cp a, r8
+#pragma region
+    case 0xB8:
+        cpu_instr_cp(cpu, cpu->reg_b);
+
+        DISASM("cp a, b");
+        break;
+
+    case 0xB9:
+        cpu_instr_cp(cpu, cpu->reg_c);
+        
+        DISASM("cp a, c");
+        break;
+
+    case 0xBA:
+        cpu_instr_cp(cpu, cpu->reg_d);
+        
+        DISASM("cp a, d");
+        break;
+
+    case 0xBB:
+        cpu_instr_cp(cpu, cpu->reg_e);
+        
+        DISASM("cp a, e");
+        break;
+
+    case 0xBC:
+        cpu_instr_cp(cpu, cpu->reg_h);
+        
+        DISASM("cp a, h");
+        break;
+
+    case 0xBD:
+        cpu_instr_cp(cpu, cpu->reg_l);
+        
+        DISASM("cp a, l");
+        break;
+
+    case 0xBF:
+        cpu_instr_cp(cpu, cpu->reg_a);
+        
+        DISASM("cp a, a");
+        break;
+#pragma endregion
+
+    // inc r8
+#pragma region
+    case 0x04:
+        cpu_instr_inc(cpu, &cpu->reg_b);
+
+        DISASM("inc b");
+        break;
+    
+    case 0x0c:
+        cpu_instr_inc(cpu, &cpu->reg_c);
+        
+        DISASM("inc c");
+        break;
+
+    case 0x14:
+        cpu_instr_inc(cpu, &cpu->reg_d);
+
+        DISASM("inc d");
+        break;
+    
+    case 0x1c:
+        cpu_instr_inc(cpu, &cpu->reg_e);
+        
+        DISASM("inc e");
+        break;
+
+    case 0x24:
+        cpu_instr_inc(cpu, &cpu->reg_h);
+
+        DISASM("inc h");
+        break;
+    
+    case 0x2c:
+        cpu_instr_inc(cpu, &cpu->reg_l);
+        
+        DISASM("inc l");
+        break;
+
+    case 0x3c:
+        cpu_instr_inc(cpu, &cpu->reg_a);
+
+        DISASM("inc a");
+        break;
+#pragma endregion
+    
+    // dec r8
+#pragma region
+    case 0x05:
+        cpu_instr_dec(cpu, &cpu->reg_b);
+
+        DISASM("dec b");
+        break;
+    
+    case 0x0d:
+        cpu_instr_dec(cpu, &cpu->reg_c);
+        
+        DISASM("dec c");
+        break;
+
+    case 0x15:
+        cpu_instr_dec(cpu, &cpu->reg_d);
+
+        DISASM("dec d");
+        break;
+    
+    case 0x1d:
+        cpu_instr_dec(cpu, &cpu->reg_e);
+        
+        DISASM("dec e");
+        break;
+
+    case 0x25:
+        cpu_instr_dec(cpu, &cpu->reg_h);
+
+        DISASM("dec h");
+        break;
+    
+    case 0x2d:
+        cpu_instr_dec(cpu, &cpu->reg_l);
+        
+        DISASM("dec l");
+        break;
+
+    case 0x3d:
+        cpu_instr_dec(cpu, &cpu->reg_a);
+
+        DISASM("dec a");
+        break;
+#pragma endregion
+
+    // OP a, (hl)
+#pragma region
+    case 0x86:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_add(cpu, imm_val8);
+
+        DISASM("add a, (hl)");
+        break;
+
+    case 0x96:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_sub(cpu, imm_val8);
+
+        DISASM("sub a, (hl)");
+        break;
+
+    case 0xA6:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_and(cpu, imm_val8);
+
+        DISASM("and a, (hl)");
+        break;
+
+    case 0xB6:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_or(cpu, imm_val8);
+
+        DISASM("or a, (hl)");
+        break;
+
+    case 0x8E:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_adc(cpu, imm_val8);
+
+        DISASM("adc a, (hl)");
+        break;
+
+    case 0x9E:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_sbc(cpu, imm_val8);
+
+        DISASM("sbc a, (hl)");
+        break;
+
+    case 0xAE:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_xor(cpu, imm_val8);
+
+        DISASM("xor a, (hl)");
+        break;
+
+    case 0xBE:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_cp(cpu, imm_val8);
+
+        DISASM("cp a, (hl)");
+        break;
+#pragma endregion
+
+    // OP a, imm8
+#pragma region
+    case 0xC6:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_add(cpu, imm_val8);
+
+        DISASM("add a, 0x%02x", imm_val8);
+        break;
+
+    case 0xD6:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_sub(cpu, imm_val8);
+
+        DISASM("sub a, 0x%02x", imm_val8);
+        break;
+
+    case 0xE6:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_and(cpu, imm_val8);
+
+        DISASM("and a, 0x%02x", imm_val8);
+        break;
+
+    case 0xF6:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_or(cpu, imm_val8);
+
+        DISASM("or a, 0x%02x", imm_val8);
+        break;
+
+    case 0xCE:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_adc(cpu, imm_val8);
+
+        DISASM("adc a, 0x%02x", imm_val8);
+        break;
+
+    case 0xDE:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_sbc(cpu, imm_val8);
+
+        DISASM("sbc a, 0x%02x", imm_val8);
+        break;
+
+    case 0xEE:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_xor(cpu, imm_val8);
+
+        DISASM("xor a, 0x%02x", imm_val8);
+        break;
+
+    case 0xFE:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        cpu_instr_cp(cpu, imm_val8);
+
+        DISASM("cp a, 0x%02x", imm_val8);
+        break;
+#pragma endregion
+
+    // misc 8-bit arithmetic
+#pragma region
+    case 0x34:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_inc(cpu, &imm_val8);
+        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8));
+
+        DISASM("inc (hl)");
+        break;
+
+    case 0x35:
+        GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8));
+        cpu_instr_dec(cpu, &imm_val8);
+        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8));
+        
+        DISASM("dec (hl)");
+        break;
+
+    case 0x37:
+        SET_N(0);
+        SET_H(0);
+        SET_C(1);
+
+        DISASM("scf");
+        break;
+
+    case 0x3F:
+        SET_N(0);
+        SET_H(0);
+        SET_C(1 - GET_C());
+
+        DISASM("ccf");
+        break;
+
+    case 0x2F:
+        SET_N(1);
+        SET_H(1);
+
+        cpu->reg_a = ~cpu->reg_a;
+
+        DISASM("cpl");
+        break;
+
 #pragma endregion
 #pragma endregion
     }
