@@ -214,6 +214,17 @@ static void cpu_instr_dec(gb_cpu_t *cpu, uint8_t *value_ptr)
     (*value_ptr)--;
 }
 
+static gbstatus_e cpu_instr_add_hl(gb_cpu_t *cpu, uint16_t value)
+{
+    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+
+    SET_N(0);
+    SET_H(CHECK_CARRY_12((cpu->reg_hl & 0xFFF) + (value & 0xFFF)));
+    SET_C(CHECK_CARRY_16(cpu->reg_hl + value));
+
+    cpu->reg_hl += value;
+}
+
 gbstatus_e cpu_step(gb_cpu_t *cpu)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -1567,6 +1578,139 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         DISASM("cpl");
         break;
 
+
+    case 0x27:
+        /// TODO:
+
+        DISASM("DAA");
+        break;
+#pragma endregion
+#pragma endregion
+
+    // 16-bit arithmetics
+#pragma region
+    // inc r16
+#pragma region
+    case 0x03:
+        cpu->reg_bc++;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+
+        DISASM("inc bc");
+        break;
+
+    case 0x13:
+        cpu->reg_de++;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        
+        DISASM("inc de");
+        break;
+
+    case 0x23:
+        cpu->reg_hl++;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        
+        DISASM("inc hl");
+        break;
+
+    case 0x33:
+        cpu->sp++;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        
+        DISASM("inc sp");
+        break;
+#pragma endregion
+
+    // dec r16
+#pragma region
+    case 0x0B:
+        cpu->reg_bc--;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+
+        DISASM("dec bc");
+        break;
+
+    case 0x1B:
+        cpu->reg_de--;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        
+        DISASM("dec de");
+        break;
+
+    case 0x2B:
+        cpu->reg_hl--;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        
+        DISASM("dec hl");
+        break;
+
+    case 0x3B:
+        cpu->sp--;
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        
+        DISASM("dec sp");
+        break;
+#pragma endregion
+
+    // add hl, r16
+#pragma region
+    case 0x09:
+        GBCHK(cpu_instr_add_hl(cpu, cpu->reg_bc));
+
+        DISASM("add hl, bc");
+        break;
+
+    case 0x19:
+        GBCHK(cpu_instr_add_hl(cpu, cpu->reg_de));
+
+        DISASM("add hl, de");
+        break;
+
+    case 0x29:
+        GBCHK(cpu_instr_add_hl(cpu, cpu->reg_hl));
+
+        DISASM("add hl, hl");
+        break;
+
+    case 0x39:
+        GBCHK(cpu_instr_add_hl(cpu, cpu->sp));
+
+        DISASM("add hl, sp");
+        break;
+#pragma endregion
+
+    // misc 16-bit arithmetics
+#pragma region
+    case 0xE8:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        SET_Z(0);
+        SET_N(0);
+        SET_H(CHECK_CARRY_4((cpu->sp & 0xF) + (imm_val8 & 0xF)));
+        SET_C(CHECK_CARRY_8((cpu->sp & 0xFF) + imm_val8));
+
+        cpu->sp += (int8_t)imm_val8;
+
+        GBCHK(sync_with_cpu(cpu->gb, 8)); // internal
+
+        DISASM("add sp, %d", (int8_t)imm_val8);
+        break;
+
+    case 0xF8:
+        GBCHK(cpu_mem_read(cpu, cpu->pc, &imm_val8));
+        cpu->pc++;
+
+        SET_Z(0);
+        SET_N(0);
+        SET_H(CHECK_CARRY_4((cpu->sp & 0xF) + (imm_val8 & 0xF)));
+        SET_C(CHECK_CARRY_8((cpu->sp & 0xFF) + imm_val8));
+
+        cpu->reg_hl = cpu->sp + (int8_t)imm_val8;
+
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+
+        DISASM("ld hl, sp%+d", (int8_t)imm_val8);
+        break;
 #pragma endregion
 #pragma endregion
     }
