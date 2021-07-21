@@ -49,6 +49,77 @@ static gbstatus_e cpu_mem_write_word(gb_cpu_t *cpu, uint16_t addr, uint16_t word
  */
 static gbstatus_e cpu_step_cb(gb_cpu_t *cpu);
 
+gbstatus_e cpu_init(gb_cpu_t *cpu, gb_t *gb)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (cpu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
+        return status;
+    }
+
+    cpu->gb = gb;
+    GBCHK(cpu_reset(cpu));
+    
+    return GBSTATUS_OK;
+}
+
+gbstatus_e cpu_reset(gb_cpu_t *cpu)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (cpu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
+        return status;
+    }
+
+    cpu->reg_af = 0x01B0;
+    cpu->reg_bc = 0x0013;
+    cpu->reg_de = 0x00D8;
+    cpu->reg_hl = 0x014D;
+    cpu->sp     = 0xFFFE;
+    cpu->pc     = 0x0100;
+
+    cpu->ime    = false;
+    cpu->halted = false;
+
+    return GBSTATUS_OK;
+}
+
+gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (cpu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
+        return status;
+    }
+
+    // note than unhalting is performed even if IME forbids interrupt handling
+    if (cpu->halted)
+    {
+        cpu->halted = false;
+        cpu->pc++;
+    }
+
+    if (!cpu->ime)
+        return GBSTATUS_INT_DISABLED;
+
+    cpu->ime = false;
+
+    GBCHK(sync_with_cpu(cpu->gb, 8));
+
+    cpu->sp -= 2;
+    GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
+
+    GBCHK(sync_with_cpu(cpu->gb, 4));
+    cpu->pc = int_vec;
+
+    return GBSTATUS_OK;
+}
 
 static gbstatus_e cpu_mem_read(gb_cpu_t *cpu, uint16_t addr, uint8_t *byte_out)
 {
@@ -418,7 +489,7 @@ static inline void cpu_instr_swap(gb_cpu_t *cpu, uint8_t *byte)
 
 static inline void cpu_instr_bit(gb_cpu_t *cpu, int bit, uint8_t *byte)
 {
-    SET_Z(1 - ((*byte >> bit) & 0x1))
+    SET_Z(1 - ((*byte >> bit) & 0x1));
     SET_N(0);
     SET_H(1);
 }
@@ -2185,7 +2256,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     return GBSTATUS_OK;
 }
 
-gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
+static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
 {
     uint8_t opcode = 0x00;
     GBCHK(cpu_mem_read(cpu, cpu->pc, &opcode));

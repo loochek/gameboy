@@ -8,7 +8,7 @@
 #include "gb.h"
 
 /**
- * LR35902 state description
+ * Gameboy CPU representation
  */
 typedef struct gb_cpu
 {
@@ -60,6 +60,11 @@ typedef struct gb_cpu
         uint16_t reg_hl;
     };
 
+    bool halted;
+
+    /// Interrupt master switch
+    bool ime;
+
     /// Program counter
     uint16_t pc;
 
@@ -72,10 +77,33 @@ typedef struct gb_cpu
 } gb_cpu_t;
 
 /**
+ * Initializes the instance of the CPU
+ * 
+ * \param cpu CPU instance
+ * \param gb Parent GB instance
+ */
+gbstatus_e cpu_init(gb_cpu_t *cpu, gb_t *gb);
+
+/**
+ * Resets the CPU
+ * 
+ * \param cpu CPU instance
+ */
+gbstatus_e cpu_reset(gb_cpu_t *cpu);
+
+/**
  * Fetches and executes one CPU instruction
  * 
  * \param cpu CPU instance
  */
 gbstatus_e cpu_step(gb_cpu_t *cpu);
+
+/**
+ * Makes an interrupt request to the CPU
+ * 
+ * \param cpu CPU instance
+ * \param int_vec Interrupt vector
+ */
+gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec);
 
 #endif

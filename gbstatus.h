@@ -15,7 +15,8 @@ typedef enum
     GBSTATUS_OK = 0,
     GBSTATUS_BAD_ALLOC,
     GBSTATUS_NULL_POINTER,
-    GBSTATUS_CPU_ILLEGAL_OP
+    GBSTATUS_CPU_ILLEGAL_OP,
+    GBSTATUS_INT_DISABLED
 } gbstatus_e;
 
 extern char __gbstatus_str[];
