@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "cpu.h"
 #include "mmu.h"
 
@@ -76,6 +77,20 @@ static inline gbstatus_e cpu_mem_write_word(gb_cpu_t *cpu, uint16_t addr, uint16
 
     GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
     GBCHK(mmu_write(cpu->gb->mmu, addr + 1, word >> 8));
+
+    return GBSTATUS_OK;
+}
+
+/**
+ * Delayed jump
+ * 
+ * \param cpu CPU instance
+ * \param location Where to jump
+ */
+static gbstatus_e cpu_jump(gb_cpu_t *cpu, uint16_t location)
+{
+    GBCHK(sync_with_cpu(cpu->gb, 4));
+    cpu->pc = location;
 
     return GBSTATUS_OK;
 }
@@ -223,6 +238,79 @@ static gbstatus_e cpu_instr_add_hl(gb_cpu_t *cpu, uint16_t value)
     SET_C(CHECK_CARRY_16(cpu->reg_hl + value));
 
     cpu->reg_hl += value;
+
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_instr_jp_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
+{
+    uint16_t new_pc = 0;
+    GBCHK(cpu_mem_read_word(cpu, cpu->pc, &new_pc));
+    cpu->pc += 2;
+
+    *loc_out = new_pc;
+
+    if (condition)
+        GBCHK(cpu_jump(cpu, new_pc));
+
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_instr_jr_cond(gb_cpu_t *cpu, bool condition, int8_t *disp_out)
+{
+    int8_t disp = 0;
+    GBCHK(cpu_mem_read(cpu, cpu->pc, &disp));
+    cpu->pc++;
+
+    *disp_out = disp;
+
+    if (condition)
+        GBCHK(cpu_jump(cpu, cpu->pc + disp));
+
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
+{
+    uint16_t new_pc = 0;
+    GBCHK(cpu_mem_read_word(cpu, cpu->pc, &new_pc));
+    cpu->pc += 2;
+
+    *loc_out = new_pc;
+
+    if (condition)
+    {
+        cpu->sp -= 2;
+        GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
+        GBCHK(cpu_jump(cpu, new_pc));
+    }
+    
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_instr_ret_cond(gb_cpu_t *cpu, bool condition)
+{
+    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+
+    if (condition)
+    {
+        uint16_t ret_addr = 0;
+        GBCHK(cpu_mem_read_word(cpu, cpu->sp, &ret_addr));
+        cpu->sp += 2;
+
+        GBCHK(cpu_jump(cpu, ret_addr));
+    }
+    
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_instr_rst(gb_cpu_t *cpu, uint16_t vector)
+{
+    cpu->sp -= 2;
+    GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
+    GBCHK(cpu_jump(cpu, vector));
+
+    return GBSTATUS_OK;
 }
 
 gbstatus_e cpu_step(gb_cpu_t *cpu)
@@ -1710,6 +1798,212 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
 
         DISASM("ld hl, sp%+d", (int8_t)imm_val8);
+        break;
+#pragma endregion
+#pragma endregion
+    
+    // control (branches)
+#pragma region
+    // absolute jumps
+#pragma region
+    case 0xC2:
+        GBCHK(cpu_instr_jp_cond(cpu, 1 - GET_Z(), &imm_val16));
+
+        DISASM("jp nz, 0x%04x", imm_val16);
+        break;
+
+    case 0xD2:
+        GBCHK(cpu_instr_jp_cond(cpu, 1 - GET_C(), &imm_val16));
+
+        DISASM("jp nc, 0x%04x", imm_val16);
+        break;
+
+    case 0xCA:
+        GBCHK(cpu_instr_jp_cond(cpu, GET_Z(), &imm_val16));
+
+        DISASM("jp z, 0x%04x", imm_val16);
+        break;
+
+    case 0xDA:
+        GBCHK(cpu_instr_jp_cond(cpu, GET_C(), &imm_val16));
+
+        DISASM("jp c, 0x%04x", imm_val16);
+        break;
+
+    case 0xC3:
+        GBCHK(cpu_instr_jp_cond(cpu, true, &imm_val16));
+
+        DISASM("jp 0x%04x", imm_val16);
+        break;
+
+    case 0xE9:
+        cpu->pc = cpu->reg_hl;
+
+        DISASM("jp hl");
+        break;
+#pragma endregion
+
+    // relative jumps
+#pragma region
+    case 0x20:
+        GBCHK(cpu_instr_jr_cond(cpu, 1 - GET_Z(), &imm_val8));
+
+        DISASM("jr nz, %d", imm_val8);
+        break;
+
+    case 0x30:
+        GBCHK(cpu_instr_jr_cond(cpu, 1 - GET_C(), &imm_val8));
+
+        DISASM("jr nc, %d", imm_val8);
+        break;
+
+    case 0x28:
+        GBCHK(cpu_instr_jr_cond(cpu, GET_Z(), &imm_val8));
+
+        DISASM("jr z, %d", imm_val8);
+        break;
+
+    case 0x38:
+        GBCHK(cpu_instr_jr_cond(cpu, GET_C(), &imm_val8));
+
+        DISASM("jr c, %d", imm_val8);
+        break;
+
+    case 0x18:
+        GBCHK(cpu_instr_jr_cond(cpu, true, &imm_val8));
+
+        DISASM("jr %d", imm_val8);
+        break;
+#pragma endregion
+
+    // calls
+#pragma region
+    case 0xC4:
+        GBCHK(cpu_instr_call_cond(cpu, 1 - GET_Z(), &imm_val16));
+
+        DISASM("call nz, 0x%04x", imm_val16);
+        break;
+
+    case 0xD4:
+        GBCHK(cpu_instr_call_cond(cpu, 1 - GET_C(), &imm_val16));
+
+        DISASM("call nc, 0x%04x", imm_val16);
+        break;
+
+    case 0xCC:
+        GBCHK(cpu_instr_call_cond(cpu, GET_Z(), &imm_val16));
+
+        DISASM("call z, 0x%04x", imm_val16);
+        break;
+
+    case 0xDC:
+        GBCHK(cpu_instr_call_cond(cpu, GET_C(), &imm_val16));
+
+        DISASM("call c, 0x%04x", imm_val16);
+        break;
+
+    case 0xCD:
+        GBCHK(cpu_instr_call_cond(cpu, true, &imm_val16));
+
+        DISASM("call 0x%04x", imm_val16);
+        break;
+#pragma endregion
+
+    // returns
+#pragma region
+    case 0xC0:
+        GBCHK(cpu_instr_ret_cond(cpu, 1 - GET_Z()));
+
+        DISASM("ret nz");
+        break;
+
+    case 0xD0:
+        GBCHK(cpu_instr_ret_cond(cpu, 1 - GET_C()));
+
+        DISASM("ret nc");
+        break;
+
+    case 0xC8:
+        GBCHK(cpu_instr_ret_cond(cpu, GET_Z()));
+
+        DISASM("ret z");
+        break;
+
+    case 0xD8:
+        GBCHK(cpu_instr_ret_cond(cpu, GET_C()));
+
+        DISASM("ret c");
+        break;
+
+    case 0xC9:
+        GBCHK(cpu_mem_read_word(cpu, cpu->sp, &imm_val16));
+        cpu->sp += 2;
+
+        GBCHK(cpu_jump(cpu, imm_val16));
+
+        DISASM("ret");
+        break;
+
+    case 0xD9:
+        GBCHK(cpu_mem_read_word(cpu, cpu->sp, &imm_val16));
+        cpu->sp += 2;
+
+        GBCHK(cpu_jump(cpu, imm_val16));
+
+        /// TODO: enable interrupts here
+
+        DISASM("reti");
+        break;
+#pragma endregion
+
+    // resets
+#pragma region
+    case 0xC7:
+        GBCHK(cpu_instr_rst(cpu, 0x00));
+
+        DISASM("rst 00h");
+        break;
+
+    case 0xD7:
+        GBCHK(cpu_instr_rst(cpu, 0x10));
+
+        DISASM("rst 10h");
+        break;
+
+    case 0xE7:
+        GBCHK(cpu_instr_rst(cpu, 0x20));
+
+        DISASM("rst 20h");
+        break;
+
+    case 0xF7:
+        GBCHK(cpu_instr_rst(cpu, 0x30));
+
+        DISASM("rst 30h");
+        break;
+
+    case 0xCF:
+        GBCHK(cpu_instr_rst(cpu, 0x08));
+
+        DISASM("rst 08h");
+        break;
+
+    case 0xDF:
+        GBCHK(cpu_instr_rst(cpu, 0x18));
+
+        DISASM("rst 18h");
+        break;
+
+    case 0xEF:
+        GBCHK(cpu_instr_rst(cpu, 0x28));
+
+        DISASM("rst 28h");
+        break;
+
+    case 0xFF:
+        GBCHK(cpu_instr_rst(cpu, 0x38));
+
+        DISASM("rst 38h");
         break;
 #pragma endregion
 #pragma endregion

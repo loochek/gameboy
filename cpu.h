@@ -3,9 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-
 #include "gbstatus.h"
-
 #include "gb.h"
 
 /**
