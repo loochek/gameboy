@@ -6,6 +6,69 @@
 
 #define DISASM(instr, ...)
 
+/// Sets 7th bit of the flags register
+#define SET_Z(val) (cpu->reg_f = (cpu->reg_f & 0x7F) | ((val) << 7))
+
+/// Sets 6th bit of the flags register
+#define SET_N(val) (cpu->reg_f = (cpu->reg_f & 0xBF) | ((val) << 6))
+
+/// Sets 5th bit of the flags register
+#define SET_H(val) (cpu->reg_f = (cpu->reg_f & 0xDF) | ((val) << 5))
+
+/// Sets 4th bit of the flags register
+#define SET_C(val) (cpu->reg_f = (cpu->reg_f & 0xEF) | ((val) << 4))
+
+/// Gets 7th bit of the flags register
+#define GET_Z() ((cpu->reg_f >> 7) & 0x1)
+
+/// Gets 6th bit of the flags register
+#define GET_N() ((cpu->reg_f >> 6) & 0x1)
+
+/// Gets 5th bit of the flags register
+#define GET_H() ((cpu->reg_f >> 5) & 0x1)
+
+/// Gets 4th bit of the flags register
+#define GET_C() ((cpu->reg_f >> 4) & 0x1)
+
+#define ZERO_CHECK(val) ((val & 0xFF) == 0)
+
+#define CHECK_CARRY_4(val)  (((val) >> 4)  != 0)
+#define CHECK_CARRY_8(val)  (((val) >> 8)  != 0)
+#define CHECK_CARRY_12(val) (((val) >> 12) != 0)
+#define CHECK_CARRY_16(val) (((val) >> 16) != 0)
+
+// Helper functions and common implementations of some instructions
+
+static inline gbstatus_e cpu_jump           (gb_cpu_t *cpu, uint16_t location);
+static inline gbstatus_e cpu_instr_add_hl   (gb_cpu_t *cpu, uint16_t value);
+static inline gbstatus_e cpu_instr_jp_cond  (gb_cpu_t *cpu, bool condition, uint16_t *loc_out);
+static inline gbstatus_e cpu_instr_jr_cond  (gb_cpu_t *cpu, bool condition, int8_t   *disp_out);
+static inline gbstatus_e cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out);
+static inline gbstatus_e cpu_instr_ret_cond (gb_cpu_t *cpu, bool condition);
+static inline gbstatus_e cpu_instr_rst      (gb_cpu_t *cpu, uint16_t vector);
+
+static inline void cpu_instr_add (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_adc (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_sub (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_cp  (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_sbc (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_and (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_or  (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_xor (gb_cpu_t *cpu, uint8_t value);
+static inline void cpu_instr_inc (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_dec (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_rl  (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_rlc (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_rr  (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_rrc (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_sla (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_sra (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_srl (gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_swap(gb_cpu_t *cpu, uint8_t *value_ptr);
+static inline void cpu_instr_bit (gb_cpu_t *cpu, int bit, uint8_t *value_ptr);
+static inline void cpu_instr_res (gb_cpu_t *cpu, int bit, uint8_t *value_ptr);
+static inline void cpu_instr_set (gb_cpu_t *cpu, int bit, uint8_t *value_ptr);
+
 /**
  * Emulates a memory read request from the CPU with correct timing
  * 
@@ -49,6 +112,7 @@ static gbstatus_e cpu_mem_write_word(gb_cpu_t *cpu, uint16_t addr, uint16_t word
  */
 static gbstatus_e cpu_step_cb(gb_cpu_t *cpu);
 
+
 gbstatus_e cpu_init(gb_cpu_t *cpu, gb_t *gb)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -82,8 +146,9 @@ gbstatus_e cpu_reset(gb_cpu_t *cpu)
     cpu->sp     = 0xFFFE;
     cpu->pc     = 0x0100;
 
-    cpu->ime    = false;
-    cpu->halted = false;
+    cpu->ime      = false;
+    cpu->halted   = false;
+    cpu->ei_delay = 0;
 
     return GBSTATUS_OK;
 }
@@ -98,7 +163,7 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
         return status;
     }
 
-    // note than unhalting is performed even if IME forbids interrupt handling
+    // note than unhalting is performed even if interrupts are disabled
     if (cpu->halted)
     {
         cpu->halted = false;
@@ -121,390 +186,6 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
     return GBSTATUS_OK;
 }
 
-static gbstatus_e cpu_mem_read(gb_cpu_t *cpu, uint16_t addr, uint8_t *byte_out)
-{
-    // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_read(cpu->gb->mmu, addr, byte_out));
-
-    return GBSTATUS_OK;
-}
-
-static gbstatus_e cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr, uint16_t *word_out)
-{
-    uint8_t byte = 0;
-
-    // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_read(cpu->gb->mmu, addr, &byte));
-    *word_out |= byte;
-
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_read(cpu->gb->mmu, addr + 1, &byte));
-    *word_out |= (byte << 8);
-
-    return GBSTATUS_OK;
-}
-
-static gbstatus_e cpu_mem_write(gb_cpu_t *cpu, uint16_t addr, uint8_t byte)
-{
-    // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_write(cpu->gb->mmu, addr, byte));
-
-    return GBSTATUS_OK;
-}
-
-static gbstatus_e cpu_mem_write_word(gb_cpu_t *cpu, uint16_t addr, uint16_t word)
-{
-    // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_write(cpu->gb->mmu, addr, word & 0xFF));
-
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_write(cpu->gb->mmu, addr + 1, word >> 8));
-
-    return GBSTATUS_OK;
-}
-
-/// Sets 7th bit of the flags register
-#define SET_Z(val) (cpu->reg_f = (cpu->reg_f & 0x7F) | ((val) << 7))
-
-/// Sets 6th bit of the flags register
-#define SET_N(val) (cpu->reg_f = (cpu->reg_f & 0xBF) | ((val) << 6))
-
-/// Sets 5th bit of the flags register
-#define SET_H(val) (cpu->reg_f = (cpu->reg_f & 0xDF) | ((val) << 5))
-
-/// Sets 4th bit of the flags register
-#define SET_C(val) (cpu->reg_f = (cpu->reg_f & 0xEF) | ((val) << 4))
-
-/// Gets 7th bit of the flags register
-#define GET_Z() ((cpu->reg_f >> 7) & 0x1)
-
-/// Gets 6th bit of the flags register
-#define GET_N() ((cpu->reg_f >> 6) & 0x1)
-
-/// Gets 5th bit of the flags register
-#define GET_H() ((cpu->reg_f >> 5) & 0x1)
-
-/// Gets 4th bit of the flags register
-#define GET_C() ((cpu->reg_f >> 4) & 0x1)
-
-#define ZERO_CHECK(val) ((val & 0xFF) == 0)
-
-#define CHECK_CARRY_4(val)  (((val) >> 4)  != 0)
-#define CHECK_CARRY_8(val)  (((val) >> 8)  != 0)
-#define CHECK_CARRY_12(val) (((val) >> 12) != 0)
-#define CHECK_CARRY_16(val) (((val) >> 16) != 0)
-
-// There are common implementations of some instructions
-
-static inline gbstatus_e cpu_jump(gb_cpu_t *cpu, uint16_t location)
-{
-    GBCHK(sync_with_cpu(cpu->gb, 4));
-    cpu->pc = location;
-
-    return GBSTATUS_OK;
-}
-
-static inline void cpu_instr_add(gb_cpu_t *cpu, uint8_t value)
-{
-    SET_Z(ZERO_CHECK(cpu->reg_a + value));
-    SET_N(0);
-    SET_H(CHECK_CARRY_4((cpu->reg_a & 0xF) + (value & 0xF)));
-    SET_C(CHECK_CARRY_8(cpu->reg_a + value));
-
-    cpu->reg_a += value;
-}
-
-static inline void cpu_instr_adc(gb_cpu_t *cpu, uint8_t value)
-{
-    int carry = GET_C();
-
-    SET_Z(ZERO_CHECK(cpu->reg_a + value + carry));
-    SET_N(0);
-    SET_H(CHECK_CARRY_4((cpu->reg_a & 0xF) + (value & 0xF) + carry));
-    SET_C(CHECK_CARRY_8(cpu->reg_a + value + carry));
-
-    cpu->reg_a += value + carry;
-}
-
-static inline void cpu_instr_sub(gb_cpu_t *cpu, uint8_t value)
-{
-    SET_Z(cpu->reg_a == value);
-    SET_N(1);
-    SET_H((cpu->reg_a & 0xF) < (value & 0xF));
-    SET_C(cpu->reg_a < value);
-
-    cpu->reg_a -= value;
-}
-
-static inline void cpu_instr_cp(gb_cpu_t *cpu, uint8_t value)
-{
-    SET_Z(cpu->reg_a == value);
-    SET_N(1);
-    SET_H((cpu->reg_a & 0xF) < (value & 0xF));
-    SET_C(cpu->reg_a < value);
-}
-
-static inline void cpu_instr_sbc(gb_cpu_t *cpu, uint8_t value)
-{
-    int carry = GET_C();
-    int result = cpu->reg_a - value - carry;
-
-    SET_Z(ZERO_CHECK(result));
-    SET_N(1);
-    SET_H((cpu->reg_a & 0xF) - (value & 0xF) - carry < 0);
-    SET_C(result < 0);
-
-    cpu->reg_a = result;
-}
-
-static inline void cpu_instr_and(gb_cpu_t *cpu, uint8_t value)
-{
-    cpu->reg_a &= value;
-
-    SET_Z(cpu->reg_a == 0);
-    SET_N(0);
-    SET_H(1);
-    SET_C(0);
-}
-
-static inline void cpu_instr_or(gb_cpu_t *cpu, uint8_t value)
-{
-    cpu->reg_a |= value;
-
-    SET_Z(cpu->reg_a == 0);
-    SET_N(0);
-    SET_H(0);
-    SET_C(0);
-}
-
-static inline void cpu_instr_xor(gb_cpu_t *cpu, uint8_t value)
-{
-    cpu->reg_a ^= value;
-
-    SET_Z(cpu->reg_a == 0);
-    SET_N(0);
-    SET_H(0);
-    SET_C(0);
-}
-
-static inline void cpu_instr_inc(gb_cpu_t *cpu, uint8_t *value_ptr)
-{
-    SET_Z(ZERO_CHECK(*value_ptr + 1));
-    SET_N(0);
-    SET_H((*value_ptr) & 0xF == 0xF);
-
-    (*value_ptr)++;
-}
-
-static inline void cpu_instr_dec(gb_cpu_t *cpu, uint8_t *value_ptr)
-{
-    SET_Z(ZERO_CHECK(*value_ptr - 1));
-    SET_N(1);
-    SET_H((*value_ptr) & 0xF == 0);
-
-    (*value_ptr)--;
-}
-
-static inline gbstatus_e cpu_instr_add_hl(gb_cpu_t *cpu, uint16_t value)
-{
-    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
-
-    SET_N(0);
-    SET_H(CHECK_CARRY_12((cpu->reg_hl & 0xFFF) + (value & 0xFFF)));
-    SET_C(CHECK_CARRY_16(cpu->reg_hl + value));
-
-    cpu->reg_hl += value;
-
-    return GBSTATUS_OK;
-}
-
-static inline gbstatus_e cpu_instr_jp_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
-{
-    uint16_t new_pc = 0;
-    GBCHK(cpu_mem_read_word(cpu, cpu->pc, &new_pc));
-    cpu->pc += 2;
-
-    *loc_out = new_pc;
-
-    if (condition)
-        GBCHK(cpu_jump(cpu, new_pc));
-
-    return GBSTATUS_OK;
-}
-
-static inline gbstatus_e cpu_instr_jr_cond(gb_cpu_t *cpu, bool condition, int8_t *disp_out)
-{
-    int8_t disp = 0;
-    GBCHK(cpu_mem_read(cpu, cpu->pc, &disp));
-    cpu->pc++;
-
-    *disp_out = disp;
-
-    if (condition)
-        GBCHK(cpu_jump(cpu, cpu->pc + disp));
-
-    return GBSTATUS_OK;
-}
-
-static inline gbstatus_e cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
-{
-    uint16_t new_pc = 0;
-    GBCHK(cpu_mem_read_word(cpu, cpu->pc, &new_pc));
-    cpu->pc += 2;
-
-    *loc_out = new_pc;
-
-    if (condition)
-    {
-        cpu->sp -= 2;
-        GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
-        GBCHK(cpu_jump(cpu, new_pc));
-    }
-    
-    return GBSTATUS_OK;
-}
-
-static inline gbstatus_e cpu_instr_ret_cond(gb_cpu_t *cpu, bool condition)
-{
-    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
-
-    if (condition)
-    {
-        uint16_t ret_addr = 0;
-        GBCHK(cpu_mem_read_word(cpu, cpu->sp, &ret_addr));
-        cpu->sp += 2;
-
-        GBCHK(cpu_jump(cpu, ret_addr));
-    }
-    
-    return GBSTATUS_OK;
-}
-
-static inline gbstatus_e cpu_instr_rst(gb_cpu_t *cpu, uint16_t vector)
-{
-    cpu->sp -= 2;
-    GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
-    GBCHK(cpu_jump(cpu, vector));
-
-    return GBSTATUS_OK;
-}
-
-static inline void cpu_instr_rl(gb_cpu_t *cpu, uint8_t *byte)
-{
-    int msb = *byte >> 7;
-
-    *byte = (*byte << 1) | GET_C();
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(msb);
-}
-
-static inline void cpu_instr_rlc(gb_cpu_t *cpu, uint8_t *byte)
-{
-    int msb = *byte >> 7;
-
-    *byte = (*byte << 1) | msb;
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(msb);
-}
-
-static inline void cpu_instr_rr(gb_cpu_t *cpu, uint8_t *byte)
-{
-    int lsb = *byte & 0x1;
-
-    *byte = (*byte >> 1) | (GET_C() << 7);
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(lsb);
-}
-
-static inline void cpu_instr_rrc(gb_cpu_t *cpu, uint8_t *byte)
-{
-    int lsb = *byte & 0x1;
-
-    *byte = (*byte >> 1) | (lsb << 7);
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(lsb);
-}
-
-static inline void cpu_instr_sla(gb_cpu_t *cpu, uint8_t *byte)
-{
-    int msb = *byte >> 7;
-
-    *byte <<= 1;
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(msb);
-}
-
-static inline void cpu_instr_sra(gb_cpu_t *cpu, uint8_t *byte)
-{
-    int lsb = *byte & 0x1;
-
-    *byte = (*byte >> 1) | (*byte & 0x80);
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(lsb);
-}
-
-static inline void cpu_instr_srl(gb_cpu_t *cpu, uint8_t *byte)
-{
-    int lsb = *byte & 0x1;
-
-    *byte >>= 1;
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(lsb);
-}
-
-static inline void cpu_instr_swap(gb_cpu_t *cpu, uint8_t *byte)
-{
-    *byte = (*byte >> 4) | (*byte << 4);
-
-    SET_Z(ZERO_CHECK(*byte));
-    SET_N(0);
-    SET_H(0);
-    SET_C(0);
-}
-
-static inline void cpu_instr_bit(gb_cpu_t *cpu, int bit, uint8_t *byte)
-{
-    SET_Z(1 - ((*byte >> bit) & 0x1));
-    SET_N(0);
-    SET_H(1);
-}
-
-static inline void cpu_instr_res(gb_cpu_t *cpu, int bit, uint8_t *byte)
-{
-    *byte &= ~(1 << bit);
-}
-
-
-static inline void cpu_instr_set(gb_cpu_t *cpu, int bit, uint8_t *byte)
-{
-    *byte |= 1 << bit;
-}
-
 gbstatus_e cpu_step(gb_cpu_t *cpu)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -513,6 +194,13 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     {
         GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
         return status;
+    }
+
+    if (cpu->ei_delay != 0)
+    {
+        cpu->ei_delay--;
+        if (cpu->ei_delay == 0)
+            cpu->ime = true;
     }
 
     uint8_t opcode = 0x00;
@@ -524,10 +212,6 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
     switch (opcode)
     {
-    case 0x00:
-        DISASM("nop");
-        break;
-
     // 8-bit loads
 #pragma region
     // ld r8, r8
@@ -2200,6 +1884,39 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 #pragma endregion
 #pragma endregion
 
+    // control (misc)
+#pragma region
+    case 0x00:
+        DISASM("nop");
+        break;
+
+    case 0x10:
+        /// TODO: stop
+        DISASM("stop");
+        break;
+
+    case 0x76:
+        cpu->halted = true;
+        cpu->pc--;
+
+        DISASM("halt");
+        break;
+
+    case 0xF3:
+        cpu->ime = false;
+        cpu->ei_delay = 0;
+
+        DISASM("di");
+        break;
+
+    case 0xFB:
+        cpu->ime = false;
+        cpu->ei_delay = 2;
+
+        DISASM("ei");
+        break;
+#pragma endregion
+
     // misc
 #pragma region
     case 0x07:
@@ -2254,6 +1971,358 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     }
 
     return GBSTATUS_OK;
+}
+
+
+static gbstatus_e cpu_mem_read(gb_cpu_t *cpu, uint16_t addr, uint8_t *byte_out)
+{
+    // Memory access takes some time
+    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
+    GBCHK(mmu_read(cpu->gb->mmu, addr, byte_out));
+
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr, uint16_t *word_out)
+{
+    uint8_t byte = 0;
+
+    // Memory access takes some time
+    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
+    GBCHK(mmu_read(cpu->gb->mmu, addr, &byte));
+    *word_out |= byte;
+
+    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
+    GBCHK(mmu_read(cpu->gb->mmu, addr + 1, &byte));
+    *word_out |= (byte << 8);
+
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_mem_write(gb_cpu_t *cpu, uint16_t addr, uint8_t byte)
+{
+    // Memory access takes some time
+    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
+    GBCHK(mmu_write(cpu->gb->mmu, addr, byte));
+
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e cpu_mem_write_word(gb_cpu_t *cpu, uint16_t addr, uint16_t word)
+{
+    // Memory access takes some time
+    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
+    GBCHK(mmu_write(cpu->gb->mmu, addr, word & 0xFF));
+
+    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
+    GBCHK(mmu_write(cpu->gb->mmu, addr + 1, word >> 8));
+
+    return GBSTATUS_OK;
+}
+
+static inline gbstatus_e cpu_jump(gb_cpu_t *cpu, uint16_t location)
+{
+    GBCHK(sync_with_cpu(cpu->gb, 4));
+    cpu->pc = location;
+
+    return GBSTATUS_OK;
+}
+
+static inline void cpu_instr_add(gb_cpu_t *cpu, uint8_t value)
+{
+    SET_Z(ZERO_CHECK(cpu->reg_a + value));
+    SET_N(0);
+    SET_H(CHECK_CARRY_4((cpu->reg_a & 0xF) + (value & 0xF)));
+    SET_C(CHECK_CARRY_8(cpu->reg_a + value));
+
+    cpu->reg_a += value;
+}
+
+static inline void cpu_instr_adc(gb_cpu_t *cpu, uint8_t value)
+{
+    int carry = GET_C();
+
+    SET_Z(ZERO_CHECK(cpu->reg_a + value + carry));
+    SET_N(0);
+    SET_H(CHECK_CARRY_4((cpu->reg_a & 0xF) + (value & 0xF) + carry));
+    SET_C(CHECK_CARRY_8(cpu->reg_a + value + carry));
+
+    cpu->reg_a += value + carry;
+}
+
+static inline void cpu_instr_sub(gb_cpu_t *cpu, uint8_t value)
+{
+    SET_Z(cpu->reg_a == value);
+    SET_N(1);
+    SET_H((cpu->reg_a & 0xF) < (value & 0xF));
+    SET_C(cpu->reg_a < value);
+
+    cpu->reg_a -= value;
+}
+
+static inline void cpu_instr_cp(gb_cpu_t *cpu, uint8_t value)
+{
+    SET_Z(cpu->reg_a == value);
+    SET_N(1);
+    SET_H((cpu->reg_a & 0xF) < (value & 0xF));
+    SET_C(cpu->reg_a < value);
+}
+
+static inline void cpu_instr_sbc(gb_cpu_t *cpu, uint8_t value)
+{
+    int carry = GET_C();
+    int result = cpu->reg_a - value - carry;
+
+    SET_Z(ZERO_CHECK(result));
+    SET_N(1);
+    SET_H((cpu->reg_a & 0xF) - (value & 0xF) - carry < 0);
+    SET_C(result < 0);
+
+    cpu->reg_a = result;
+}
+
+static inline void cpu_instr_and(gb_cpu_t *cpu, uint8_t value)
+{
+    cpu->reg_a &= value;
+
+    SET_Z(cpu->reg_a == 0);
+    SET_N(0);
+    SET_H(1);
+    SET_C(0);
+}
+
+static inline void cpu_instr_or(gb_cpu_t *cpu, uint8_t value)
+{
+    cpu->reg_a |= value;
+
+    SET_Z(cpu->reg_a == 0);
+    SET_N(0);
+    SET_H(0);
+    SET_C(0);
+}
+
+static inline void cpu_instr_xor(gb_cpu_t *cpu, uint8_t value)
+{
+    cpu->reg_a ^= value;
+
+    SET_Z(cpu->reg_a == 0);
+    SET_N(0);
+    SET_H(0);
+    SET_C(0);
+}
+
+static inline void cpu_instr_inc(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    SET_Z(ZERO_CHECK(*value_ptr + 1));
+    SET_N(0);
+    SET_H((*value_ptr) & 0xF == 0xF);
+
+    (*value_ptr)++;
+}
+
+static inline void cpu_instr_dec(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    SET_Z(ZERO_CHECK(*value_ptr - 1));
+    SET_N(1);
+    SET_H((*value_ptr) & 0xF == 0);
+
+    (*value_ptr)--;
+}
+
+static inline gbstatus_e cpu_instr_add_hl(gb_cpu_t *cpu, uint16_t value)
+{
+    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+
+    SET_N(0);
+    SET_H(CHECK_CARRY_12((cpu->reg_hl & 0xFFF) + (value & 0xFFF)));
+    SET_C(CHECK_CARRY_16(cpu->reg_hl + value));
+
+    cpu->reg_hl += value;
+
+    return GBSTATUS_OK;
+}
+
+static inline gbstatus_e cpu_instr_jp_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
+{
+    uint16_t new_pc = 0;
+    GBCHK(cpu_mem_read_word(cpu, cpu->pc, &new_pc));
+    cpu->pc += 2;
+
+    *loc_out = new_pc;
+
+    if (condition)
+        GBCHK(cpu_jump(cpu, new_pc));
+
+    return GBSTATUS_OK;
+}
+
+static inline gbstatus_e cpu_instr_jr_cond(gb_cpu_t *cpu, bool condition, int8_t *disp_out)
+{
+    int8_t disp = 0;
+    GBCHK(cpu_mem_read(cpu, cpu->pc, &disp));
+    cpu->pc++;
+
+    *disp_out = disp;
+
+    if (condition)
+        GBCHK(cpu_jump(cpu, cpu->pc + disp));
+
+    return GBSTATUS_OK;
+}
+
+static inline gbstatus_e cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
+{
+    uint16_t new_pc = 0;
+    GBCHK(cpu_mem_read_word(cpu, cpu->pc, &new_pc));
+    cpu->pc += 2;
+
+    *loc_out = new_pc;
+
+    if (condition)
+    {
+        cpu->sp -= 2;
+        GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
+        GBCHK(cpu_jump(cpu, new_pc));
+    }
+    
+    return GBSTATUS_OK;
+}
+
+static inline gbstatus_e cpu_instr_ret_cond(gb_cpu_t *cpu, bool condition)
+{
+    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+
+    if (condition)
+    {
+        uint16_t ret_addr = 0;
+        GBCHK(cpu_mem_read_word(cpu, cpu->sp, &ret_addr));
+        cpu->sp += 2;
+
+        GBCHK(cpu_jump(cpu, ret_addr));
+    }
+    
+    return GBSTATUS_OK;
+}
+
+static inline gbstatus_e cpu_instr_rst(gb_cpu_t *cpu, uint16_t vector)
+{
+    cpu->sp -= 2;
+    GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
+    GBCHK(cpu_jump(cpu, vector));
+
+    return GBSTATUS_OK;
+}
+
+static inline void cpu_instr_rl(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    int msb = *value_ptr >> 7;
+
+    *value_ptr = (*value_ptr << 1) | GET_C();
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(msb);
+}
+
+static inline void cpu_instr_rlc(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    int msb = *value_ptr >> 7;
+
+    *value_ptr = (*value_ptr << 1) | msb;
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(msb);
+}
+
+static inline void cpu_instr_rr(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    int lsb = *value_ptr & 0x1;
+
+    *value_ptr = (*value_ptr >> 1) | (GET_C() << 7);
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(lsb);
+}
+
+static inline void cpu_instr_rrc(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    int lsb = *value_ptr & 0x1;
+
+    *value_ptr = (*value_ptr >> 1) | (lsb << 7);
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(lsb);
+}
+
+static inline void cpu_instr_sla(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    int msb = *value_ptr >> 7;
+
+    *value_ptr <<= 1;
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(msb);
+}
+
+static inline void cpu_instr_sra(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    int lsb = *value_ptr & 0x1;
+
+    *value_ptr = (*value_ptr >> 1) | (*value_ptr & 0x80);
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(lsb);
+}
+
+static inline void cpu_instr_srl(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    int lsb = *value_ptr & 0x1;
+
+    *value_ptr >>= 1;
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(lsb);
+}
+
+static inline void cpu_instr_swap(gb_cpu_t *cpu, uint8_t *value_ptr)
+{
+    *value_ptr = (*value_ptr >> 4) | (*value_ptr << 4);
+
+    SET_Z(ZERO_CHECK(*value_ptr));
+    SET_N(0);
+    SET_H(0);
+    SET_C(0);
+}
+
+static inline void cpu_instr_bit(gb_cpu_t *cpu, int bit, uint8_t *value_ptr)
+{
+    SET_Z(1 - ((*value_ptr >> bit) & 0x1));
+    SET_N(0);
+    SET_H(1);
+}
+
+static inline void cpu_instr_res(gb_cpu_t *cpu, int bit, uint8_t *value_ptr)
+{
+    *value_ptr &= ~(1 << bit);
+}
+
+
+static inline void cpu_instr_set(gb_cpu_t *cpu, int bit, uint8_t *value_ptr)
+{
+    *value_ptr |= 1 << bit;
 }
 
 static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)

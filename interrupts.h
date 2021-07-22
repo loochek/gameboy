@@ -6,13 +6,15 @@
 #include "gbstatus.h"
 #include "gb.h"
 
+// Interrupts are ordered by bit position/priority
+
 typedef enum
 {
-    INT_VBLANK = 1,
-    INT_LCDC   = 2,
-    INT_TIMA   = 4,
-    INT_SERIAL = 8,
-    INT_JOYPAD = 16
+    INT_VBLANK,
+    INT_LCDC,
+    INT_TIMA,
+    INT_SERIAL,
+    INT_JOYPAD
 } interrupt_e;
 
 typedef struct
@@ -51,7 +53,7 @@ gbstatus_e int_reset(gb_int_controller_t *ctrl);
 gbstatus_e int_request(gb_int_controller_t *ctrl, interrupt_e intr);
 
 /**
- * Makes one step of an interrupt controller logic
+ * Makes one step of the interrupt controller logic
  * 
  * \param ctrl Interrupt controller instance
  */

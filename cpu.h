@@ -62,6 +62,8 @@ typedef struct gb_cpu
 
     bool halted;
 
+    int ei_delay;
+
     /// Interrupt master switch
     bool ime;
 
@@ -92,18 +94,18 @@ gbstatus_e cpu_init(gb_cpu_t *cpu, gb_t *gb);
 gbstatus_e cpu_reset(gb_cpu_t *cpu);
 
 /**
- * Fetches and executes one CPU instruction
- * 
- * \param cpu CPU instance
- */
-gbstatus_e cpu_step(gb_cpu_t *cpu);
-
-/**
  * Makes an interrupt request to the CPU
  * 
  * \param cpu CPU instance
  * \param int_vec Interrupt vector
  */
 gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec);
+
+/**
+ * Fetches and executes one CPU instruction
+ * 
+ * \param cpu CPU instance
+ */
+gbstatus_e cpu_step(gb_cpu_t *cpu);
 
 #endif

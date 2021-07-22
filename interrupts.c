@@ -1,15 +1,6 @@
 #include "interrupts.h"
 
-const int INT_COUNT = 5;
-
-static interrupt_e int_order[] = 
-{
-    INT_VBLANK,
-    INT_LCDC,
-    INT_TIMA,
-    INT_SERIAL,
-    INT_JOYPAD
-};
+#define INT_COUNT 5
 
 static uint8_t isr_addr[] = 
 {
@@ -52,7 +43,7 @@ gbstatus_e int_reset(gb_int_controller_t *ctrl)
     return GBSTATUS_OK;
 }
 
-gbstatus_e gb_int_request(gb_int_controller_t *ctrl, interrupt_e intr)
+gbstatus_e int_request(gb_int_controller_t *ctrl, interrupt_e intr)
 {
     gbstatus_e status = GBSTATUS_OK;
 
@@ -62,7 +53,7 @@ gbstatus_e gb_int_request(gb_int_controller_t *ctrl, interrupt_e intr)
         return status;
     }
 
-    ctrl->reg_if |= intr;
+    ctrl->reg_if |= 1 << intr;
     return GBSTATUS_OK;
 }
 
@@ -74,20 +65,20 @@ gbstatus_e int_step(gb_int_controller_t *ctrl)
     {
         // Pending interrupts are present
         
-        for (int int_num = 0; int_num < INT_COUNT; int_num++)
+        for (interrupt_e intr = 0; intr < INT_COUNT; intr++)
         {
-            interrupt_e intr = int_order[int_num];
+            int intr_mask = 1 << intr;
 
-            if (ctrl->reg_ie & ctrl->reg_if & intr)
+            if (ctrl->reg_ie & ctrl->reg_if & intr_mask)
             {
-                status = cpu_irq(ctrl->gb->cpu, isr_addr[int_num]);
+                status = cpu_irq(ctrl->gb->cpu, isr_addr[intr]);
                 if (status == GBSTATUS_INT_DISABLED)
                     break;
 
                 // check for unexpected situations
                 GBCHK(status);
 
-                ctrl->reg_if &= ~intr;
+                ctrl->reg_if &= ~intr_mask;
                 break;
             }
         }
