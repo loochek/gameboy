@@ -1,5 +1,6 @@
 #include "cpu.h"
 #include "mmu.h"
+#include "gb.h"
 
 /// Memory access duration in clock cycles
 #define MEM_ACCESS_DURATION 4
@@ -1722,31 +1723,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // relative jumps
 #pragma region
     case 0x20:
-        GBCHK(cpu_instr_jr_cond(cpu, 1 - GET_Z(), &imm_val8));
+        GBCHK(cpu_instr_jr_cond(cpu, 1 - GET_Z(), (int8_t*)&imm_val8));
 
         DISASM("jr nz, %d", imm_val8);
         break;
 
     case 0x30:
-        GBCHK(cpu_instr_jr_cond(cpu, 1 - GET_C(), &imm_val8));
+        GBCHK(cpu_instr_jr_cond(cpu, 1 - GET_C(), (int8_t*)&imm_val8));
 
         DISASM("jr nc, %d", imm_val8);
         break;
 
     case 0x28:
-        GBCHK(cpu_instr_jr_cond(cpu, GET_Z(), &imm_val8));
+        GBCHK(cpu_instr_jr_cond(cpu, GET_Z(), (int8_t*)&imm_val8));
 
         DISASM("jr z, %d", imm_val8);
         break;
 
     case 0x38:
-        GBCHK(cpu_instr_jr_cond(cpu, GET_C(), &imm_val8));
+        GBCHK(cpu_instr_jr_cond(cpu, GET_C(), (int8_t*)&imm_val8));
 
         DISASM("jr c, %d", imm_val8);
         break;
 
     case 0x18:
-        GBCHK(cpu_instr_jr_cond(cpu, true, &imm_val8));
+        GBCHK(cpu_instr_jr_cond(cpu, true, (int8_t*)&imm_val8));
 
         DISASM("jr %d", imm_val8);
         break;
@@ -2115,7 +2116,7 @@ static inline void cpu_instr_inc(gb_cpu_t *cpu, uint8_t *value_ptr)
 {
     SET_Z(ZERO_CHECK(*value_ptr + 1));
     SET_N(0);
-    SET_H((*value_ptr) & 0xF == 0xF);
+    SET_H(((*value_ptr) & 0xF) == 0xF);
 
     (*value_ptr)++;
 }
@@ -2124,7 +2125,7 @@ static inline void cpu_instr_dec(gb_cpu_t *cpu, uint8_t *value_ptr)
 {
     SET_Z(ZERO_CHECK(*value_ptr - 1));
     SET_N(1);
-    SET_H((*value_ptr) & 0xF == 0);
+    SET_H(((*value_ptr) & 0xF) == 0);
 
     (*value_ptr)--;
 }
@@ -2159,7 +2160,7 @@ static inline gbstatus_e cpu_instr_jp_cond(gb_cpu_t *cpu, bool condition, uint16
 static inline gbstatus_e cpu_instr_jr_cond(gb_cpu_t *cpu, bool condition, int8_t *disp_out)
 {
     int8_t disp = 0;
-    GBCHK(cpu_mem_read(cpu, cpu->pc, &disp));
+    GBCHK(cpu_mem_read(cpu, cpu->pc, (uint8_t*)&disp));
     cpu->pc++;
 
     *disp_out = disp;
@@ -3968,6 +3969,8 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
         break;
 #pragma endregion    
     }
+
+    GBCHK(int_step(cpu->gb->intr_ctrl));
 
     return GBSTATUS_OK;
 }

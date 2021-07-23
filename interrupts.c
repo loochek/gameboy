@@ -1,4 +1,5 @@
 #include "interrupts.h"
+#include "gb.h"
 
 #define INT_COUNT 5
 

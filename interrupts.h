@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "gbstatus.h"
-#include "gb.h"
 
 // Interrupts are ordered by bit position/priority
 
@@ -17,6 +16,11 @@ typedef enum
     INT_JOYPAD
 } interrupt_e;
 
+struct gb;
+
+/**
+ * Representation of Gameboy interrupt controller
+ */
 typedef struct
 {
     // Interrupt enable register
@@ -25,8 +29,8 @@ typedef struct
     // Interrupt flags register
     uint8_t reg_if;
 
-    /// Pointer to the Gameboy structure
-    gb_t *gb;
+    /// Pointer to the parent Gameboy structure
+    struct gb *gb;
 } gb_int_controller_t;
 
 /**
@@ -35,7 +39,7 @@ typedef struct
  * \param ctrl Interrupt controller instance
  * \param gb Parent GB instance
  */
-gbstatus_e int_init(gb_int_controller_t *ctrl, gb_t *gb);
+gbstatus_e int_init(gb_int_controller_t *ctrl, struct gb *gb);
 
 /**
  * Resets the interrupt controller

@@ -4,14 +4,35 @@
 #include <stdint.h>
 #include "gbstatus.h"
 
+struct gb;
+
 /**
  * Represents Gameboy memory bus. 
- * Handles RAM, cartridge, bank switching and passes MMIO requests to peripheral devices. 
+ * Handles RAM, cartridge and passes MMIO requests to peripheral devices. 
  */
 typedef struct gb_mmu
 {
+    /// Internal RAM
+    uint8_t *ram;
 
+    /// Internal RAM 2
+    uint8_t *hram;
+
+    /// Cartridge ROM (no MBC for now)
+    uint8_t *rom;
+
+    /// Pointer to the parent Gameboy structure
+    struct gb *gb;
 } gb_mmu_t;
+
+/**
+ * Initializes the instance of the MMU
+ * 
+ * \param mmu MMU instance
+ * \param gb Parent GB instance
+ * \param rom_path ROM to load
+ */
+gbstatus_e mmu_init(gb_mmu_t *mmu, struct gb *gb, const char *rom_path);
 
 /**
  * Emulates a memory read request from the CPU
@@ -30,5 +51,12 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out);
  * \param byte Byte to write
  */
 gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte);
+
+/**
+ * Deinitializes the instance of the MMU
+ * 
+ * \param mmu MMU instance
+ */
+gbstatus_e mmu_deinit(gb_mmu_t *mmu);
 
 #endif

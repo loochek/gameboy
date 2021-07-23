@@ -1,6 +1,8 @@
 #ifndef GBSTATUS_H
 #define GBSTATUS_H
 
+#include <stdio.h>
+
 /**
  * Status reporting system of this project. 
  * 
@@ -15,8 +17,10 @@ typedef enum
     GBSTATUS_OK = 0,
     GBSTATUS_BAD_ALLOC,
     GBSTATUS_NULL_POINTER,
+    GBSTATUS_IO_FAIL,
     GBSTATUS_CPU_ILLEGAL_OP,
-    GBSTATUS_INT_DISABLED
+    GBSTATUS_INT_DISABLED,
+    GBSTATUS_NOT_IMPLEMENTED
 } gbstatus_e;
 
 extern char __gbstatus_str[];

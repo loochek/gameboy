@@ -5,7 +5,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "gbstatus.h"
-#include "gb.h"
+
+struct gb;
 
 /**
  * Gameboy CPU representation
@@ -73,8 +74,8 @@ typedef struct gb_cpu
     /// Stack pointer
     uint16_t sp;
 
-    /// Pointer to the Gameboy structure
-    gb_t *gb;
+    /// Pointer to the parent Gameboy structure
+    struct gb *gb;
 
 } gb_cpu_t;
 
@@ -84,7 +85,7 @@ typedef struct gb_cpu
  * \param cpu CPU instance
  * \param gb Parent GB instance
  */
-gbstatus_e cpu_init(gb_cpu_t *cpu, gb_t *gb);
+gbstatus_e cpu_init(gb_cpu_t *cpu, struct gb *gb);
 
 /**
  * Resets the CPU

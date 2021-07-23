@@ -3,11 +3,13 @@
 
 #include "cpu.h"
 #include "mmu.h"
+#include "interrupts.h"
 
 typedef struct gb
 {
-    gb_cpu_t *cpu;
-    gb_mmu_t *mmu;
+    gb_cpu_t            *cpu;
+    gb_mmu_t            *mmu;
+    gb_int_controller_t *intr_ctrl;
 } gb_t;
 
 /**
