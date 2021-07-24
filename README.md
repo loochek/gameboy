@@ -6,4 +6,4 @@ Implemented (at least I think so) features:
 * Interrupts
 * Timer
 
-The emulator passes Blargg's cpu_instr test.
+The emulator passes Blargg's cpu_instr, instr_timing, mem_timing tests.

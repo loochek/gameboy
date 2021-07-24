@@ -2847,7 +2847,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x46:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 0, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 0, (hl)");
         break;
@@ -2897,7 +2896,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x4E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 1, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 1, (hl)");
         break;
@@ -2947,7 +2945,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x56:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 2, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 2, (hl)");
         break;
@@ -2997,7 +2994,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x5E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 3, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 3, (hl)");
         break;
@@ -3047,7 +3043,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x66:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 4, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 4, (hl)");
         break;
@@ -3097,7 +3092,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x6E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 5, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 5, (hl)");
         break;
@@ -3147,7 +3141,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x76:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 6, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 6, (hl)");
         break;
@@ -3197,7 +3190,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
     case 0x7E:
         GBCHK(cpu_mem_read(cpu, cpu->reg_hl, &imm_val8))
         cpu_instr_bit(cpu, 7, &imm_val8);
-        GBCHK(cpu_mem_write(cpu, cpu->reg_hl, imm_val8))
 
         DISASM("bit 7, (hl)");
         break;
