@@ -187,6 +187,27 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
     return GBSTATUS_OK;
 }
 
+gbstatus_e cpu_dump(gb_cpu_t *cpu)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (cpu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
+        return status;
+    }
+
+    printf("======== CPU state ========\n");
+    printf("| PC: 0x%04x   SP: 0x%04x |\n", cpu->pc, cpu->sp);
+    printf("| AF: 0x%04x   BC: 0x%04x |\n", cpu->reg_af, cpu->reg_bc);
+    printf("| DE: 0x%04x   HL: 0x%04x |\n", cpu->reg_de, cpu->reg_hl);
+    printf("| Z: %d N: %d H: %d C: %d     |\n", GET_Z(), GET_N(), GET_H(), GET_C());
+    printf("| IME: %d EI delay: %d      |\n", cpu->ime, cpu->ei_delay);
+    printf("===========================\n");
+
+    return GBSTATUS_OK;
+}
+
 gbstatus_e cpu_step(gb_cpu_t *cpu)
 {
     gbstatus_e status = GBSTATUS_OK;

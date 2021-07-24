@@ -103,6 +103,13 @@ gbstatus_e cpu_reset(gb_cpu_t *cpu);
 gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec);
 
 /**
+ * Dumps CPU state to the standart output
+ * 
+ * \param cpu CPU instance
+ */
+gbstatus_e cpu_dump(gb_cpu_t *cpu);
+
+/**
  * Fetches and executes one CPU instruction
  * 
  * \param cpu CPU instance

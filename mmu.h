@@ -23,6 +23,9 @@ typedef struct gb_mmu
 
     /// Pointer to the parent Gameboy structure
     struct gb *gb;
+
+    /// Debug thing
+    char serial_data;
 } gb_mmu_t;
 
 /**

@@ -14,7 +14,7 @@
 
 typedef enum
 {
-    GBSTATUS_OK = 0,
+    GBSTATUS_OK,
     GBSTATUS_BAD_ALLOC,
     GBSTATUS_NULL_POINTER,
     GBSTATUS_IO_FAIL,
@@ -23,7 +23,10 @@ typedef enum
     GBSTATUS_NOT_IMPLEMENTED
 } gbstatus_e;
 
+/// Stores an extended info message about last non-OK status
 extern char __gbstatus_str[];
+
+extern const char *__gbstatus_str_repr[];
 
 /**
  * Updates global status string
@@ -40,5 +43,8 @@ extern char __gbstatus_str[];
  * If the value of the expression is different from GBSTATUS_OK, then this value is returned immediately.
  */
 #define GBCHK(expr) { gbstatus_e __status = expr; if (__status != GBSTATUS_OK) return __status; }
+
+#define GBSTATUS_ERR_PRINT() fprintf(stderr, "Something went wrong: [%s] %s\n", \
+                                     __gbstatus_str_repr[status], __gbstatus_str)
 
 #endif

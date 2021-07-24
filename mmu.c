@@ -5,6 +5,7 @@
 #define ROM_SIZE  0x8000
 #define RAM_SIZE  0x2000
 #define HRAM_SIZE 0x100
+#define SRAM_SIZE 0x2000
 
 gbstatus_e mmu_init(gb_mmu_t *mmu, gb_t *gb, const char *rom_path)
 {
@@ -53,6 +54,8 @@ gbstatus_e mmu_init(gb_mmu_t *mmu, gb_t *gb, const char *rom_path)
 
     mmu->ram  = ram;
     mmu->hram = ram + RAM_SIZE;
+
+    mmu->serial_data = 0x00;
 
     fclose(rom_file);
     return GBSTATUS_OK;
@@ -264,6 +267,22 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
                 gb->intr_ctrl->reg_ie = byte;
                 break;
 
+            case 0x01:
+                // Serial transfer data
+                mmu->serial_data = byte;
+                break;
+
+            case 0x02:
+                // Serial transfer control
+                // For debugging
+                if (byte == 0x81)
+                {
+                    printf("%c", (char)mmu->serial_data);
+                    mmu->serial_data = 0x00;
+                }
+
+                break;
+
             default:
                 if (addr >= 0xFF80 && addr < 0xFFFF)
                     mmu->hram[addr - 0xFF80] = byte;
@@ -290,8 +309,13 @@ gbstatus_e mmu_deinit(gb_mmu_t *mmu)
         return status;
     }
 
+    FILE *sram_file = fopen("sram.bin", "wb");
+    fwrite(mmu->sram, sizeof(uint8_t), SRAM_SIZE, sram_file);
+    fclose(sram_file);
+
     free(mmu->rom);
     free(mmu->ram);
     // HRAM is in the same block!
+    free(mmu->sram);
     return GBSTATUS_OK;
 }
