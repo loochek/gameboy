@@ -44,6 +44,62 @@ gbstatus_e int_reset(gb_int_controller_t *ctrl)
     return GBSTATUS_OK;
 }
 
+gbstatus_e int_if_write(gb_int_controller_t *ctrl, uint8_t value)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ctrl == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
+        return status;
+    }
+
+    ctrl->reg_if = value;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e int_ie_write(gb_int_controller_t *ctrl, uint8_t value)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ctrl == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
+        return status;
+    }
+
+    ctrl->reg_ie = value;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e int_if_read(gb_int_controller_t *ctrl, uint8_t *value_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ctrl == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
+        return status;
+    }
+
+    *value_out = ctrl->reg_if;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e int_ie_read(gb_int_controller_t *ctrl, uint8_t *value_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ctrl == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
+        return status;
+    }
+
+    *value_out = ctrl->reg_ie;
+    return GBSTATUS_OK;
+}
+
 gbstatus_e int_request(gb_int_controller_t *ctrl, interrupt_e intr)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -61,6 +117,12 @@ gbstatus_e int_request(gb_int_controller_t *ctrl, interrupt_e intr)
 gbstatus_e int_step(gb_int_controller_t *ctrl)
 {
     gbstatus_e status = GBSTATUS_OK;
+
+    if (ctrl == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
+        return status;
+    }
 
     if (ctrl->reg_ie & ctrl->reg_if & 0x1F)
     {

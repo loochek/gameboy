@@ -1566,10 +1566,34 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
 
     case 0x27:
-        /// TODO:
+    {
+        int val = cpu->reg_a;
+        int correction = 0;
+        bool carry = false;
+
+        if (GET_H() || (!GET_N() && ((val & 0xf) > 0x9)))
+            correction += 0x6;
+        
+        if (GET_C() || (!GET_N() && val > 0x99))
+        {
+            correction += 0x60;
+            carry = true;
+        }
+
+        if (GET_N())
+            val -= correction;
+        else
+            val += correction;
+
+        SET_Z(ZERO_CHECK(val));
+        SET_H(0);
+        SET_C(carry);
+
+        cpu->reg_a = val;
 
         DISASM("DAA");
         break;
+    }   
 #pragma endregion
 #pragma endregion
 
@@ -1992,6 +2016,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 #pragma endregion
     }
 
+    GBCHK(int_step(cpu->gb->intr_ctrl));
     return GBSTATUS_OK;
 }
 
@@ -3990,8 +4015,6 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu)
         break;
 #pragma endregion    
     }
-
-    GBCHK(int_step(cpu->gb->intr_ctrl));
 
     return GBSTATUS_OK;
 }

@@ -49,6 +49,38 @@ gbstatus_e int_init(gb_int_controller_t *ctrl, struct gb *gb);
 gbstatus_e int_reset(gb_int_controller_t *ctrl);
 
 /**
+ * Emulates writing to the IF register
+ * 
+ * \param ctrl Interrupt controller instance
+ * \param value Value to write
+ */
+gbstatus_e int_if_write(gb_int_controller_t *ctrl, uint8_t value);
+
+/**
+ * Emulates writing to the IE register
+ * 
+ * \param ctrl Interrupt controller instance
+ * \param value Value to write
+ */
+gbstatus_e int_ie_write(gb_int_controller_t *ctrl, uint8_t value);
+
+/**
+ * Emulates IF register reading
+ * 
+ * \param ctrl Interrupt controller instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e int_if_read(gb_int_controller_t *ctrl, uint8_t *value_out);
+
+/**
+ * Emulates IE register reading
+ * 
+ * \param ctrl Interrupt controller instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e int_ie_read(gb_int_controller_t *ctrl, uint8_t *value_out);
+
+/**
  * Makes an interrupt request
  * 
  * \param ctrl Interrupt controller instance

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "mmu.h"
 #include "gb.h"
 
@@ -68,6 +69,22 @@ error_handler1:
 
 error_handler0:
     return status;
+}
+
+gbstatus_e mmu_reset(gb_mmu_t *mmu)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (mmu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
+        return status;
+    }
+
+    memset(mmu->ram , 0, RAM_SIZE);
+    memset(mmu->hram, 0, HRAM_SIZE);
+
+    return GBSTATUS_OK;
 }
 
 gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
@@ -155,12 +172,32 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
             {
             case 0x0F:
                 // IF (interrupt controller)
-                *byte_out = gb->intr_ctrl->reg_if;
+                GBCHK(int_if_read(gb->intr_ctrl, byte_out));
                 break;
 
             case 0xFF:
                 // IE (interrupt controller)
-                *byte_out = gb->intr_ctrl->reg_ie;
+                GBCHK(int_ie_read(gb->intr_ctrl, byte_out));
+                break;
+
+            case 0x04:
+                // DIV (timer)
+                GBCHK(timer_div_read(gb->timer, byte_out));
+                break;
+
+            case 0x05:
+                // TIMA (timer)
+                GBCHK(timer_tima_read(gb->timer, byte_out));
+                break;
+
+            case 0x06:
+                // TMA (timer)
+                GBCHK(timer_tma_read(gb->timer, byte_out));
+                break;
+
+            case 0x07:
+                // TAC (timer)
+                GBCHK(timer_tac_read(gb->timer, byte_out));
                 break;
 
             default:
@@ -259,12 +296,32 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
             {
             case 0x0F:
                 // IF (interrupt controller)
-                gb->intr_ctrl->reg_if = byte;
+                GBCHK(int_if_write(gb->intr_ctrl, byte));
                 break;
 
             case 0xFF:
                 // IE (interrupt controller)
-                gb->intr_ctrl->reg_ie = byte;
+                GBCHK(int_ie_write(gb->intr_ctrl, byte));
+                break;
+
+            case 0x04:
+                // DIV (timer)
+                GBCHK(timer_div_write(gb->timer, byte));
+                break;
+
+            case 0x05:
+                // TIMA (timer)
+                GBCHK(timer_tima_write(gb->timer, byte));
+                break;
+
+            case 0x06:
+                // TMA (timer)
+                GBCHK(timer_tma_write(gb->timer, byte));
+                break;
+
+            case 0x07:
+                // TAC (timer)
+                GBCHK(timer_tac_write(gb->timer, byte));
                 break;
 
             case 0x01:

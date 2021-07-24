@@ -38,6 +38,13 @@ typedef struct gb_mmu
 gbstatus_e mmu_init(gb_mmu_t *mmu, struct gb *gb, const char *rom_path);
 
 /**
+ * Resets the MMU
+ * 
+ * \param mmu MMU instance
+ */
+gbstatus_e mmu_reset(gb_mmu_t *mmu);
+
+/**
  * Emulates a memory read request from the CPU
  * 
  * \param mmu MMU instance
