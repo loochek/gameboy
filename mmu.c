@@ -309,13 +309,12 @@ gbstatus_e mmu_deinit(gb_mmu_t *mmu)
         return status;
     }
 
-    FILE *sram_file = fopen("sram.bin", "wb");
-    fwrite(mmu->sram, sizeof(uint8_t), SRAM_SIZE, sram_file);
-    fclose(sram_file);
+    // FILE *sram_file = fopen("sram.bin", "wb");
+    // fwrite(mmu->sram, sizeof(uint8_t), SRAM_SIZE, sram_file);
+    // fclose(sram_file);
 
     free(mmu->rom);
     free(mmu->ram);
     // HRAM is in the same block!
-    free(mmu->sram);
     return GBSTATUS_OK;
 }
