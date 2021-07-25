@@ -2,7 +2,8 @@
 
 Implemented (at least I think so) features:
 * Emulation of all CPU instructions
-* Basic memory bus with ROM, RAM and redirection of MMIO requests to the peripherals
+* Memory bus with RAM and redirection of MMIO requests to the peripherals
+* MBC1 and external cartridge RAM
 * Interrupts
 * Timer
 

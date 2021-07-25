@@ -5,6 +5,7 @@
 #include "gbstatus.h"
 
 struct gb;
+struct gb_cart;
 
 /**
  * Represents Gameboy memory bus. 
@@ -18,8 +19,8 @@ typedef struct gb_mmu
     /// Internal RAM 2
     uint8_t *hram;
 
-    /// Cartridge ROM (no MBC for now)
-    uint8_t *rom;
+    /// Current cartridge
+    struct gb_cart *cart;
 
     /// Pointer to the parent Gameboy structure
     struct gb *gb;
@@ -35,7 +36,7 @@ typedef struct gb_mmu
  * \param gb Parent GB instance
  * \param rom_path ROM to load
  */
-gbstatus_e mmu_init(gb_mmu_t *mmu, struct gb *gb, const char *rom_path);
+gbstatus_e mmu_init(gb_mmu_t *mmu, struct gb *gb);
 
 /**
  * Resets the MMU
@@ -43,6 +44,14 @@ gbstatus_e mmu_init(gb_mmu_t *mmu, struct gb *gb, const char *rom_path);
  * \param mmu MMU instance
  */
 gbstatus_e mmu_reset(gb_mmu_t *mmu);
+
+/**
+ * Changes the cartridge
+ * 
+ * \param mmu MMU instance
+ * \param cart Cartridge instance
+ */
+gbstatus_e mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart);
 
 /**
  * Emulates a memory read request from the CPU

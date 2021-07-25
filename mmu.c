@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "mmu.h"
+#include "cart.h"
 #include "gb.h"
 
-#define ROM_SIZE  0x8000
 #define RAM_SIZE  0x2000
 #define HRAM_SIZE 0x100
-#define SRAM_SIZE 0x2000
 
-gbstatus_e mmu_init(gb_mmu_t *mmu, gb_t *gb, const char *rom_path)
+gbstatus_e mmu_init(gb_mmu_t *mmu, gb_t *gb)
 {
     gbstatus_e status = GBSTATUS_OK;
 
@@ -20,52 +19,27 @@ gbstatus_e mmu_init(gb_mmu_t *mmu, gb_t *gb, const char *rom_path)
 
     mmu->gb = gb;
 
-    FILE *rom_file = fopen(rom_path, "r");
-    if (rom_file == NULL)
-    {
-        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open ROM file");
-        goto error_handler0;
-    }
-
-    mmu->rom = calloc(ROM_SIZE, sizeof(uint8_t));
-    if (mmu->rom == NULL)
-    {
-        GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
-        goto error_handler1;
-    }
-
-    int bytes_read = fread(mmu->rom, sizeof(uint8_t), ROM_SIZE, rom_file);
-    if (bytes_read < ROM_SIZE)
-    {
-        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read ROM");
-        goto error_handler2;
-    }
-    else if (bytes_read > ROM_SIZE)
-    {
-        GBSTATUS(GBSTATUS_NOT_IMPLEMENTED, "only 32KB roms are currently supported");
-        goto error_handler2;
-    }
-
     uint8_t *ram = calloc(RAM_SIZE + HRAM_SIZE, sizeof(uint8_t));
     if (ram == NULL)
     {
         GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
-        goto error_handler2;
+        goto error_handler0;
     }
 
     mmu->ram  = ram;
     mmu->hram = ram + RAM_SIZE;
 
     mmu->serial_data = 0x00;
+    mmu->cart = NULL;
 
-    fclose(rom_file);
+    status = mmu_reset(mmu);
+    if (status != GBSTATUS_OK)
+        goto error_handler1;
+
     return GBSTATUS_OK;
 
-error_handler2:
-    free(mmu->rom);
-
 error_handler1:
-    fclose(rom_file);
+    free(ram);
 
 error_handler0:
     return status;
@@ -84,6 +58,24 @@ gbstatus_e mmu_reset(gb_mmu_t *mmu)
     memset(mmu->ram , 0, RAM_SIZE);
     memset(mmu->hram, 0, HRAM_SIZE);
 
+    if (mmu->cart != NULL)
+        GBCHK(cart_reset(mmu->cart));
+
+    return GBSTATUS_OK;
+}
+
+gbstatus_e mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (mmu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
+        return status;
+    }
+
+    mmu->cart = cart;
+    GBCHK(mmu_reset(mmu));
     return GBSTATUS_OK;
 }
 
@@ -109,19 +101,18 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
     case 0x5000:
     case 0x6000:
     case 0x7000:
-        // ROM
-        *byte_out = mmu->rom[addr];
+    case 0xA000:
+    case 0xB000:
+        // ROM and external RAM requests are redirected to the cartridge
+        if (mmu->cart == NULL)
+            *byte_out = 0xFF;
+        else
+            GBCHK(cart_read(mmu->cart, addr, byte_out));
         break;
 
     case 0x8000:
     case 0x9000:
         // VRAM
-        *byte_out = 0xFF;
-        break;
-
-    case 0xA000:
-    case 0xB000:
-        // External RAM
         *byte_out = 0xFF;
         break;
 
@@ -240,17 +231,16 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
     case 0x5000:
     case 0x6000:
     case 0x7000:
-        // ROM
+    case 0xA000:
+    case 0xB000:
+        // ROM and external RAM requests are redirected to the cartridge
+        if (mmu->cart != NULL)
+            GBCHK(cart_write(mmu->cart, addr, byte));
         break;
 
     case 0x8000:
     case 0x9000:
         // VRAM
-        break;
-
-    case 0xA000:
-    case 0xB000:
-        // External RAM
         break;
 
     case 0xC000:
@@ -335,6 +325,8 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
                 if (byte == 0x81)
                 {
                     printf("%c", (char)mmu->serial_data);
+                    fflush(stdout);
+                    
                     mmu->serial_data = 0x00;
                 }
 
@@ -366,11 +358,6 @@ gbstatus_e mmu_deinit(gb_mmu_t *mmu)
         return status;
     }
 
-    // FILE *sram_file = fopen("sram.bin", "wb");
-    // fwrite(mmu->sram, sizeof(uint8_t), SRAM_SIZE, sram_file);
-    // fclose(sram_file);
-
-    free(mmu->rom);
     free(mmu->ram);
     // HRAM is in the same block!
     return GBSTATUS_OK;

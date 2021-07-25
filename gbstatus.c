@@ -10,5 +10,6 @@ const char *__gbstatus_str_repr[] =
     "GBSTATUS_IO_FAIL",
     "GBSTATUS_CPU_ILLEGAL_OP",
     "GBSTATUS_INT_DISABLED",
+    "GBSTATUS_CART_FAIL",
     "GBSTATUS_NOT_IMPLEMENTED"
 };

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "gb.h"
+#include "cart.h"
 
 gbstatus_e run(const char *rom_path)
 {
@@ -16,20 +17,46 @@ gbstatus_e run(const char *rom_path)
     gb.intr_ctrl = &intr_ctl;
     gb.timer     = &timer;
 
-    GBCHK(cpu_init(gb.cpu, &gb));
-    GBCHK(mmu_init(gb.mmu, &gb, rom_path));
-    GBCHK(int_init(gb.intr_ctrl, &gb));
-    GBCHK(timer_init(gb.timer, &gb));
+    status = cpu_init(gb.cpu, &gb);
+    if (status != GBSTATUS_OK)
+        goto cleanup0;
+
+    status = mmu_init(gb.mmu, &gb);
+    if (status != GBSTATUS_OK)
+        goto cleanup0;
+
+    status = int_init(gb.intr_ctrl, &gb);
+    if (status != GBSTATUS_OK)
+        goto cleanup1;
+
+    status = timer_init(gb.timer, &gb);
+    if (status != GBSTATUS_OK)
+        goto cleanup1;
+
+    gb_cart_t cart = {0};
+    status = cart_init(&cart, rom_path);
+    if (status != GBSTATUS_OK)
+        goto cleanup1;
+
+    status = mmu_switch_cart(gb.mmu, &cart);
+    if (status != GBSTATUS_OK)
+        goto cleanup2;
 
     while (true)
     {
-        //GBCHK(cpu_dump(gb.cpu));
-        GBCHK(cpu_step(gb.cpu));
+        status = cpu_step(gb.cpu);
+        if (status != GBSTATUS_OK)
+            goto cleanup2;
     }
 
+cleanup2:
+    GBCHK(cart_deinit(&cart));
+
+cleanup1:
     GBCHK(mmu_deinit(gb.mmu));
 
-    return GBSTATUS_OK;
+cleanup0:
+    return status;
 }
 
 int main(int argc, const char *argv[])
