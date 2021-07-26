@@ -263,6 +263,10 @@ gbstatus_e mbc1_deinit(gb_cart_t *cart)
         return status;
     }
 
+    // FILE *sram_file = fopen("sram.bin", "wb");
+    // fwrite(cart->ram, sizeof(uint8_t), cart->ram_size * SRAM_BANK_SIZE, sram_file);
+    // fclose(sram_file);
+
     free(cart->ram);
     free(cart->mbc_state);
     return GBSTATUS_OK;

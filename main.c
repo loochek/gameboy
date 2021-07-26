@@ -11,11 +11,13 @@ gbstatus_e run(const char *rom_path)
     gb_mmu_t mmu = {0};
     gb_int_controller_t intr_ctl = {0};
     gb_timer_t timer = {0};
+    gb_ppu_t ppu = {0};
     
     gb.cpu       = &cpu;
     gb.mmu       = &mmu;
     gb.intr_ctrl = &intr_ctl;
     gb.timer     = &timer;
+    gb.ppu       = &ppu;
 
     status = cpu_init(gb.cpu, &gb);
     if (status != GBSTATUS_OK)
@@ -42,12 +44,20 @@ gbstatus_e run(const char *rom_path)
     if (status != GBSTATUS_OK)
         goto cleanup2;
 
+    status = ppu_init(gb.ppu, &gb);
+    if (status != GBSTATUS_OK)
+        goto cleanup2;
+
     while (true)
     {
+        cpu_dump(gb.cpu);
         status = cpu_step(gb.cpu);
         if (status != GBSTATUS_OK)
-            goto cleanup2;
+            goto cleanup3;
     }
+
+cleanup3:
+    GBCHK(ppu_deinit(gb.ppu));
 
 cleanup2:
     GBCHK(cart_deinit(&cart));
