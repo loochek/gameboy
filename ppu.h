@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include "gbstatus.h"
 
+#define GB_SCREEN_WIDTH 160
+#define GB_SCREEN_HEIGHT 144
+
 struct gb;
 
 typedef enum
@@ -23,12 +26,21 @@ typedef enum
  */
 typedef struct gb_ppu
 {
+    // Control registers
+
     uint8_t reg_lcdc;
     uint8_t reg_stat;
     uint8_t reg_ly;
     uint8_t reg_lyc;
 
-    char *framebuffer;
+    // Background scrolling
+
+    uint8_t reg_scx;
+    uint8_t reg_scy;
+
+    // Palletes
+
+    uint8_t reg_bgp;
 
     uint8_t *vram;
     uint8_t *oam;
@@ -42,6 +54,9 @@ typedef struct gb_ppu
     bool lcdc_blocked;
 
     ppu_state_e curr_state;
+
+    bool new_frame_ready;
+    char *framebuffer;
 
     /// Pointer to the parent Gameboy structure
     struct gb *gb;
@@ -103,6 +118,30 @@ gbstatus_e ppu_ly_read(gb_ppu_t *ppu, uint8_t *value_out);
 gbstatus_e ppu_lyc_read(gb_ppu_t *ppu, uint8_t *value_out);
 
 /**
+ * Emulates SCX register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
+ * Emulates SCY register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
+ * Emulates BGP register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
  * Emulates a memory read request to the VRAM
  * 
  * \param ppu PPU instance
@@ -151,6 +190,30 @@ gbstatus_e ppu_ly_write(gb_ppu_t *ppu, uint8_t value);
  * \param value Value to write
  */
 gbstatus_e ppu_lyc_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the SCX register
+ * 
+ * \param ppu PPU instance
+ * \param value Value to write
+ */
+gbstatus_e ppu_scx_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the SCY register
+ * 
+ * \param ppu PPU instance
+ * \param value Value to write
+ */
+gbstatus_e ppu_scy_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the BGP register
+ * 
+ * \param ppu PPU instance
+ * \param value Value to write
+ */
+gbstatus_e ppu_bgp_write(gb_ppu_t *ppu, uint8_t value);
 
 /**
  * Emulates a memory write request to the VRAM

@@ -201,6 +201,16 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
                 GBCHK(ppu_stat_read(gb->ppu, byte_out));
                 break;
 
+            case 0x42:
+                // SCY (PPU)
+                GBCHK(ppu_scy_read(gb->ppu, byte_out));
+                break;
+
+            case 0x43:
+                // SCX (PPU)
+                GBCHK(ppu_scx_read(gb->ppu, byte_out));
+                break;
+
             case 0x44:
                 // LY (PPU)
                 GBCHK(ppu_ly_read(gb->ppu, byte_out));
@@ -209,6 +219,11 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
             case 0x45:
                 // LYC (PPU)
                 GBCHK(ppu_lyc_read(gb->ppu, byte_out));
+                break;
+
+            case 0x47:
+                // BGP (PPU)
+                GBCHK(ppu_bgp_read(gb->ppu, byte_out));
                 break;
 
             default:
@@ -260,7 +275,7 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
 
     case 0x8000:
     case 0x9000:
-        // VRAM
+        GBCHK(ppu_vram_write(gb->ppu, addr, byte));
         break;
 
     case 0xC000:
@@ -299,6 +314,7 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
                 break;
             
             // OAM
+            GBCHK(ppu_oam_write(gb->ppu, addr, byte));
             break;
 
         case 0xF00:
@@ -344,6 +360,16 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
                 GBCHK(ppu_stat_write(gb->ppu, byte));
                 break;
 
+            case 0x42:
+                // SCY (PPU)
+                GBCHK(ppu_scy_write(gb->ppu, byte));
+                break;
+
+            case 0x43:
+                // SCX (PPU)
+                GBCHK(ppu_scx_write(gb->ppu, byte));
+                break;
+
             case 0x44:
                 // LY (PPU)
                 GBCHK(ppu_ly_write(gb->ppu, byte));
@@ -352,6 +378,11 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
             case 0x45:
                 // LYC (PPU)
                 GBCHK(ppu_lyc_write(gb->ppu, byte));
+                break;
+
+            case 0x47:
+                // BGP (PPU)
+                GBCHK(ppu_bgp_write(gb->ppu, byte));
                 break;
 
             case 0x01:
