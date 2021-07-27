@@ -6,6 +6,7 @@
 #include "interrupts.h"
 #include "timer.h"
 #include "ppu.h"
+#include "joypad.h"
 
 typedef struct gb
 {
@@ -14,6 +15,7 @@ typedef struct gb
     gb_ppu_t            *ppu;
     gb_int_controller_t *intr_ctrl;
     gb_timer_t          *timer;
+    gb_joypad_t         *joypad;
 } gb_t;
 
 /**

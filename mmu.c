@@ -171,6 +171,11 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
                 GBCHK(int_ie_read(gb->intr_ctrl, byte_out));
                 break;
 
+            case 0x00:
+                // JOYP (Joypad)
+                GBCHK(joypad_joyp_read(gb->joypad, byte_out));
+                break;
+
             case 0x04:
                 // DIV (timer)
                 GBCHK(timer_div_read(gb->timer, byte_out));
@@ -328,6 +333,11 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
             case 0xFF:
                 // IE (interrupt controller)
                 GBCHK(int_ie_write(gb->intr_ctrl, byte));
+                break;
+
+            case 0x00:
+                // JOYP (Joypad)
+                GBCHK(joypad_joyp_write(gb->joypad, byte));
                 break;
 
             case 0x04:

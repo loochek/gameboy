@@ -91,18 +91,20 @@ gbstatus_e run(const char *rom_path)
     if (status != GBSTATUS_OK)
         goto cleanup0;
 
-    gb_t gb = {0};
-    gb_cpu_t cpu = {0};
-    gb_mmu_t mmu = {0};
+    gb_t        gb     = {0};
+    gb_cpu_t    cpu    = {0};
+    gb_mmu_t    mmu    = {0};
+    gb_timer_t  timer  = {0};
+    gb_ppu_t    ppu    = {0};
+    gb_joypad_t joypad = {0};
     gb_int_controller_t intr_ctl = {0};
-    gb_timer_t timer = {0};
-    gb_ppu_t ppu = {0};
     
     gb.cpu       = &cpu;
     gb.mmu       = &mmu;
     gb.intr_ctrl = &intr_ctl;
     gb.timer     = &timer;
     gb.ppu       = &ppu;
+    gb.joypad    = &joypad;
 
     status = cpu_init(gb.cpu, &gb);
     if (status != GBSTATUS_OK)
@@ -117,6 +119,10 @@ gbstatus_e run(const char *rom_path)
         goto cleanup2;
 
     status = timer_init(gb.timer, &gb);
+    if (status != GBSTATUS_OK)
+        goto cleanup2;
+
+    status = joypad_init(gb.joypad, &gb);
     if (status != GBSTATUS_OK)
         goto cleanup2;
 
@@ -143,6 +149,34 @@ gbstatus_e run(const char *rom_path)
             if (event.type == sfEvtClosed)
                 sfRenderWindow_close(frontend.sf_window);
         }
+
+        int joypad_state = 0;
+
+        if (sfKeyboard_isKeyPressed(sfKeyX))
+            joypad_state |= BUTTON_A;
+
+        if (sfKeyboard_isKeyPressed(sfKeyZ))
+            joypad_state |= BUTTON_B;
+
+        if (sfKeyboard_isKeyPressed(sfKeySpace))
+            joypad_state |= BUTTON_SELECT;
+
+        if (sfKeyboard_isKeyPressed(sfKeyEnter))
+            joypad_state |= BUTTON_START;
+
+        if (sfKeyboard_isKeyPressed(sfKeyUp))
+            joypad_state |= BUTTON_UP;
+
+        if (sfKeyboard_isKeyPressed(sfKeyDown))
+            joypad_state |= BUTTON_DOWN;
+
+        if (sfKeyboard_isKeyPressed(sfKeyLeft))
+            joypad_state |= BUTTON_LEFT;
+
+        if (sfKeyboard_isKeyPressed(sfKeyRight))
+            joypad_state |= BUTTON_RIGHT;
+
+        GBCHK(joypad_update(gb.joypad, joypad_state));
 
         while (!gb.ppu->new_frame_ready)
         {
