@@ -25,8 +25,6 @@
 #define STATE_VBLANK_DURATION     452
 #define STATE_VBLANK_INC_DURATION 4
 
-#define STATE_VBLANK_LAST_LINE_DURATION 456
-
 #define FRAME_DURATION 70224
 
 // In pixels
@@ -129,7 +127,8 @@ gbstatus_e ppu_reset(gb_ppu_t *ppu)
     ppu->reg_bgp  = 0xFC;
 
     ppu->lcdc_blocked = false;
-
+    ppu->next_state   = STATE_OBJ_SEARCH;
+    ppu->clocks_to_next_state = 0;
     return GBSTATUS_OK;
 }
 
@@ -156,15 +155,15 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
             ppu->lcdc_blocked = false;
             ppu->reg_ly = 0;
             ppu->clocks_to_next_state = FRAME_DURATION;
-            ppu->curr_state = STATE_OBJ_SEARCH;
+            ppu->next_state = STATE_OBJ_SEARCH;
             continue;
         }
 
-        switch (ppu->curr_state)
+        switch (ppu->next_state)
         {
         case STATE_OBJ_SEARCH:
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
-            SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
+            SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 1);
 
             if (GET_BIT(ppu->reg_stat, STAT_OBJ_SEARCH_INT_BIT) && !ppu->lcdc_blocked)
             {
@@ -172,7 +171,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 ppu->lcdc_blocked = true;
             }
 
-            ppu->curr_state = STATE_DRAWING;
+            ppu->next_state = STATE_DRAWING;
             ppu->clocks_to_next_state = STATE_OBJ_SEARCH_DURATION;
             break;
 
@@ -182,7 +181,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 
             ppu_render_scanline(ppu);
 
-            ppu->curr_state = STATE_HBLANK;
+            ppu->next_state = STATE_HBLANK;
             ppu->clocks_to_next_state = STATE_DRAWING_DURATION;
             break;
 
@@ -193,10 +192,10 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
             if (GET_BIT(ppu->reg_stat, STAT_HBLANK_INT_BIT) && !ppu->lcdc_blocked)
             {
                 GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
-                ppu->lcdc_blocked = true;
+                ppu->lcdc_blocked = false;
             }
 
-            ppu->curr_state = STATE_HBLANK_INC;
+            ppu->next_state = STATE_HBLANK_INC;
             ppu->clocks_to_next_state = STATE_HBLANK_DURATION;
             break;
 
@@ -218,9 +217,9 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
 
             if (ppu->reg_ly >= GB_SCREEN_HEIGHT)
-                ppu->curr_state = STATE_VBLANK;
+                ppu->next_state = STATE_VBLANK;
             else
-                ppu->curr_state = STATE_OBJ_SEARCH;
+                ppu->next_state = STATE_OBJ_SEARCH;
 
             ppu->clocks_to_next_state = STATE_HBLANK_INC_DURATION;
             break;
@@ -242,7 +241,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 ppu->lcdc_blocked = true;
             }
 
-            ppu->curr_state = STATE_VBLANK_INC;
+            ppu->next_state = STATE_VBLANK_INC;
             ppu->clocks_to_next_state = STATE_VBLANK_DURATION;
             break;
 
@@ -264,20 +263,27 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
 
             if (ppu->reg_ly >= GB_SCREEN_HEIGHT + 10 - 1)
-                ppu->curr_state = STATE_VBLANK_LAST_LINE;
+                ppu->next_state = STATE_VBLANK_LAST_LINE;
             else
-                ppu->curr_state = STATE_VBLANK;
+                ppu->next_state = STATE_VBLANK;
 
             ppu->clocks_to_next_state = STATE_VBLANK_INC_DURATION;
             break;
 
         case STATE_VBLANK_LAST_LINE:
             ppu->reg_ly = 0;
+        
+            ppu->next_state = STATE_VBLANK_LAST_LINE_INC;
+            ppu->clocks_to_next_state = STATE_VBLANK_DURATION;
+            break;
+
+        case STATE_VBLANK_LAST_LINE_INC:
+            SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
+            SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
             ppu->lcdc_blocked = false;
 
-            ppu->curr_state = STATE_OBJ_SEARCH;
-            ppu->clocks_to_next_state = STATE_VBLANK_LAST_LINE_DURATION;
-            break;
+            ppu->next_state = STATE_OBJ_SEARCH;
+            ppu->clocks_to_next_state = STATE_VBLANK_INC_DURATION;
         } 
     }
 

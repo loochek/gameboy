@@ -18,7 +18,8 @@ typedef enum
     STATE_HBLANK_INC,
     STATE_VBLANK,
     STATE_VBLANK_INC,
-    STATE_VBLANK_LAST_LINE
+    STATE_VBLANK_LAST_LINE,
+    STATE_VBLANK_LAST_LINE_INC
 } ppu_state_e;
 
 /**
@@ -53,7 +54,7 @@ typedef struct gb_ppu
     /// LCDC interrupt can be requested once per line
     bool lcdc_blocked;
 
-    ppu_state_e curr_state;
+    ppu_state_e next_state;
 
     bool new_frame_ready;
     char *framebuffer;

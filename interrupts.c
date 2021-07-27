@@ -124,26 +124,21 @@ gbstatus_e int_step(gb_int_controller_t *ctrl)
         return status;
     }
 
-    if (ctrl->reg_ie & ctrl->reg_if & 0x1F)
+    for (interrupt_e intr = 0; intr < INT_COUNT; intr++)
     {
-        // Pending interrupts are present
-        
-        for (interrupt_e intr = 0; intr < INT_COUNT; intr++)
+        int intr_mask = 1 << intr;
+
+        if (ctrl->reg_ie & ctrl->reg_if & intr_mask)
         {
-            int intr_mask = 1 << intr;
-
-            if (ctrl->reg_ie & ctrl->reg_if & intr_mask)
-            {
-                status = cpu_irq(ctrl->gb->cpu, isr_addr[intr]);
-                if (status == GBSTATUS_INT_DISABLED)
-                    break;
-
-                // check for unexpected situations
-                GBCHK(status);
-
-                ctrl->reg_if &= ~intr_mask;
+            status = cpu_irq(ctrl->gb->cpu, isr_addr[intr]);
+            if (status == GBSTATUS_INT_DISABLED)
                 break;
-            }
+
+            // check for unexpected situations
+            GBCHK(status);
+
+            ctrl->reg_if &= ~intr_mask;
+            break;
         }
     }
 
