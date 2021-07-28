@@ -6,5 +6,20 @@ Implemented (at least I think so) features:
 * MBC1 and external cartridge RAM
 * Interrupts
 * Timer
+* Input
+* (Inaccurate and quite faulty) PPU implementation: background, window, sprites, OAM DMA
 
 The emulator passes Blargg's cpu_instr, instr_timing, mem_timing tests.
+
+Tested games:
+* Super Mario Land - looks playable
+* The Legend of Zelda: Link's Awakening - looks playable, visual glitches during intro (independent horizontal scrolling doesn't work, I don't know why yet)
+* Tetris - menu works, but there is garbage on the screen instead of main game screen
+
+## Building
+
+Just `make`. Supports both Clang and GCC. Requires CSFML (`sudo apt install libcsfml-dev` in Ubuntu and derivatives)
+
+##  Gallery
+
+![](screenshots/super_mario_land.png) ![](screenshots/links_awakening.png)

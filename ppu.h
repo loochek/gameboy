@@ -8,6 +8,8 @@
 #define GB_SCREEN_WIDTH 160
 #define GB_SCREEN_HEIGHT 144
 
+#define MAX_SPRITE_PER_LINE 10
+
 struct gb;
 
 typedef enum
@@ -47,6 +49,8 @@ typedef struct gb_ppu
     // Palletes
 
     uint8_t reg_bgp;
+    uint8_t reg_obp0;
+    uint8_t reg_obp1;
 
     uint8_t *vram;
     uint8_t *oam;
@@ -69,6 +73,11 @@ typedef struct gb_ppu
 
     bool new_frame_ready;
     char *framebuffer;
+
+    int sprite_draw_order[MAX_SPRITE_PER_LINE];
+
+    /// Draw order size
+    int line_sprite_count;
 
     /// Pointer to the parent Gameboy structure
     struct gb *gb;
@@ -170,6 +179,30 @@ gbstatus_e ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out);
 gbstatus_e ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out);
 
 /**
+ * Emulates OBP0 register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
+ * Emulates OBP1 register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
+ * Emulates DMA register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
  * Emulates a memory read request to the VRAM
  * 
  * \param ppu PPU instance
@@ -258,6 +291,31 @@ gbstatus_e ppu_wy_write(gb_ppu_t *ppu, uint8_t value);
  * \param value Value to write
  */
 gbstatus_e ppu_bgp_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the OBP0 register
+ * 
+ * \param ppu PPU instance
+ * \param value Value to write
+ */
+gbstatus_e ppu_obp0_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the OBP1 register
+ * 
+ * \param ppu PPU instance
+ * \param value Value to write
+ */
+gbstatus_e ppu_obp1_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the DMA register
+ * 
+ * \param ppu PPU instance
+ * \param addr Address to write
+ * \param byte Byte to write
+ */
+gbstatus_e ppu_dma_write(gb_ppu_t *ppu, uint8_t value);
 
 /**
  * Emulates a memory write request to the VRAM

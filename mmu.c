@@ -260,6 +260,16 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
                 GBCHK(ppu_bgp_read(gb->ppu, byte_out));
                 break;
 
+            case 0x48:
+                // OBP0 (PPU)
+                GBCHK(ppu_obp0_read(gb->ppu, byte_out));
+                break;
+
+            case 0x49:
+                // OBP1 (PPU)
+                GBCHK(ppu_obp1_read(gb->ppu, byte_out));
+                break;
+
             case 0x4A:
                 // WY (PPU)
                 GBCHK(ppu_wy_read(gb->ppu, byte_out));
@@ -268,6 +278,11 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
             case 0x4B:
                 // WX (PPU)
                 GBCHK(ppu_wx_read(gb->ppu, byte_out));
+                break;
+
+            case 0x46:
+                // DMA (PPU)
+                GBCHK(ppu_dma_read(gb->ppu, byte_out));
                 break;
 
             default:
@@ -429,9 +444,24 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
                 GBCHK(ppu_lyc_write(gb->ppu, byte));
                 break;
 
+            case 0x46:
+                // DMA (PPU)
+                GBCHK(ppu_dma_write(gb->ppu, byte));
+                break;
+
             case 0x47:
                 // BGP (PPU)
                 GBCHK(ppu_bgp_write(gb->ppu, byte));
+                break;
+
+            case 0x48:
+                // OBP0 (PPU)
+                GBCHK(ppu_obp0_write(gb->ppu, byte));
+                break;
+
+            case 0x49:
+                // OBP1 (PPU)
+                GBCHK(ppu_obp1_write(gb->ppu, byte));
                 break;
 
             case 0x4A:

@@ -5,7 +5,11 @@
 #define VRAM_SIZE 0x2000
 #define OAM_SIZE  0xA0
 
+#define OAM_ENTRY_SIZE 0x4
+
 #define LCDC_BG_WIN_ENABLE_BIT   0
+#define LCDC_OBJ_ENABLE_BIT      1
+#define LCDC_OBJ_SIZE_BIT        2
 #define LCDC_BG_TILEMAP_BIT      3
 #define LCDC_BG_WIN_TILEDATA_BIT 4
 #define LCDC_WIN_ENABLE_BIT      5
@@ -20,6 +24,11 @@
 #define STAT_OBJ_SEARCH_INT_BIT 5
 #define STAT_LYC_INT_BIT        6
 
+#define OAM_ENTRY_PALLETE_BIT  4
+#define OAM_ENTRY_FLIP_X_BIT   5
+#define OAM_ENTRY_FLIP_Y_BIT   6
+#define OAM_ENTRY_PRIORITY_BIT 7
+
 #define STATE_OBJ_SEARCH_DURATION 80
 #define STATE_DRAWING_DURATION    172
 #define STATE_HBLANK_DURATION     200
@@ -33,6 +42,13 @@
 
 #define TILE_WIDTH  8
 #define TILE_HEIGHT 8
+
+#define OBJ_HEIGHT_0 8
+#define OBJ_HEIGHT_1 16
+#define OBJ_WIDTH    8
+
+#define OBJ_GLOBAL_X_OFFSET 8
+#define OBJ_GLOBAL_Y_OFFSET 16
 
 // In tiles
 
@@ -56,6 +72,8 @@
 
 
 static void ppu_render_scanline(gb_ppu_t *ppu);
+/// Determines which sprites will be displayed on the current line
+static void ppu_search_obj(gb_ppu_t *ppu);
 
 
 gbstatus_e ppu_init(gb_ppu_t *ppu, struct gb *gb)
@@ -127,6 +145,8 @@ gbstatus_e ppu_reset(gb_ppu_t *ppu)
     ppu->reg_scx  = 0x00;
     ppu->reg_scy  = 0x00;
     ppu->reg_bgp  = 0xFC;
+    ppu->reg_obp0 = 0xFF;
+    ppu->reg_obp1 = 0xFF;
     ppu->reg_wy   = 0x00;
     ppu->reg_wy   = 0x00;
 
@@ -178,6 +198,8 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 int_request(gb->intr_ctrl, INT_LCDC);
                 ppu->lcdc_blocked = true;
             }
+
+            ppu_search_obj(ppu);
 
             ppu->next_state = STATE_DRAWING;
             ppu->clocks_to_next_state = STATE_OBJ_SEARCH_DURATION;
@@ -432,6 +454,48 @@ gbstatus_e ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out)
     return GBSTATUS_OK;
 }
 
+gbstatus_e ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    *value_out = ppu->reg_obp0;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    *value_out = ppu->reg_obp1;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    *value_out = 0xFF;
+    return GBSTATUS_OK;
+}
+
 gbstatus_e ppu_vram_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -586,6 +650,53 @@ gbstatus_e ppu_bgp_write(gb_ppu_t *ppu, uint8_t value)
     return GBSTATUS_OK;
 }
 
+gbstatus_e ppu_obp0_write(gb_ppu_t *ppu, uint8_t value)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    ppu->reg_obp0 = value;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e ppu_obp1_write(gb_ppu_t *ppu, uint8_t value)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    ppu->reg_obp1 = value;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e ppu_dma_write(gb_ppu_t *ppu, uint8_t value)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    if (value > 0xDF)
+        return GBSTATUS_OK;
+
+    for (uint8_t i = 0; i < OAM_SIZE; i++)
+        GBCHK(mmu_read(ppu->gb->mmu, (value << 8) | i, &ppu->oam[i]));
+
+    return GBSTATUS_OK;
+}
+
 gbstatus_e ppu_vram_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -624,9 +735,9 @@ gbstatus_e ppu_deinit(gb_ppu_t *ppu)
         return status;
     }
 
-    //FILE *vram_file = fopen("vram.bin", "wb");
-    //fwrite(ppu->vram, sizeof(uint8_t), VRAM_SIZE, vram_file);
-    //fclose(vram_file);
+    // FILE *vram_file = fopen("oam.bin", "wb");
+    // fwrite(ppu->oam, sizeof(uint8_t), OAM_SIZE, vram_file);
+    // fclose(vram_file);
 
     free(ppu->vram);
     free(ppu->oam);
@@ -720,4 +831,104 @@ static void ppu_render_scanline(gb_ppu_t *ppu)
         // Clear row
         memset(&ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH], 0, GB_SCREEN_WIDTH);
     }
+
+    if (GET_BIT(ppu->reg_lcdc, LCDC_OBJ_ENABLE_BIT))
+    {
+        // Sprites are enabled
+
+        for (int i = 0; i < ppu->line_sprite_count; i++)
+        {
+            uint16_t obj_oam_addr = (ppu->sprite_draw_order[i] & 0xFF) * OAM_ENTRY_SIZE;
+
+            int     obj_y_offs = ppu->oam[obj_oam_addr];
+            int     obj_x_offs = ppu->oam[obj_oam_addr + 1];
+            uint8_t tile_id    = ppu->oam[obj_oam_addr + 2];
+            uint8_t flags      = ppu->oam[obj_oam_addr + 3];
+
+            // Check sprite for visibility
+            if (obj_x_offs == 0 || obj_x_offs >= GB_SCREEN_WIDTH + OBJ_GLOBAL_X_OFFSET)
+                continue;
+
+            uint16_t tiledata_addr = TILEDATA1_ADDR + tile_id * 16;
+            uint8_t  obj_pallete = GET_BIT(flags, OAM_ENTRY_PALLETE_BIT) ? ppu->reg_obp1 : ppu->reg_obp0;
+
+            int obj_height = GET_BIT(ppu->reg_lcdc, LCDC_OBJ_SIZE_BIT) ? OBJ_HEIGHT_1 : OBJ_HEIGHT_0;
+
+            bool flip_x = GET_BIT(flags, OAM_ENTRY_FLIP_X_BIT);
+            bool flip_y = GET_BIT(flags, OAM_ENTRY_FLIP_Y_BIT);
+
+            int obj_line = ppu->reg_ly - (obj_y_offs - OBJ_GLOBAL_Y_OFFSET);
+
+            int obj_col = 0;
+            if (flip_x)
+            {
+                obj_col = OBJ_WIDTH - 1;
+                if (obj_x_offs > GB_SCREEN_WIDTH)
+                    obj_col -= (obj_x_offs - GB_SCREEN_WIDTH);
+            }
+            else
+            {
+                obj_col = 0;
+                if (obj_x_offs < OBJ_GLOBAL_X_OFFSET)
+                    obj_col = OBJ_GLOBAL_X_OFFSET - obj_x_offs;
+            }
+            
+            obj_x_offs -= OBJ_GLOBAL_X_OFFSET;
+            if (obj_x_offs < 0)
+                obj_x_offs = 0;
+
+            if (flip_y)
+				obj_line = obj_height - 1 - obj_line;
+
+            for (int x = obj_x_offs; x < obj_x_offs + OBJ_WIDTH && x < GB_SCREEN_WIDTH; x++)
+            {
+                int pixel_pallete_id = GET_TILE_PIXEL(tiledata_addr, obj_line, obj_col);
+
+                // apply pallete
+                if (pixel_pallete_id != 0)
+                    ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + x] = (obj_pallete >> (pixel_pallete_id * 2)) & 0x3;
+
+                if (flip_x)
+                    obj_col--;
+                else
+                    obj_col++;
+            }
+        }
+    }
+}
+
+static int ppu_draw_order_cmp(const void *a, const void *b)
+{
+    return *(int*)b - *(int*)a;
+}
+
+static void ppu_search_obj(gb_ppu_t *ppu)
+{
+    for (int i = 0; i < MAX_SPRITE_PER_LINE; i++)
+        ppu->sprite_draw_order[i] = -1;
+
+    ppu->line_sprite_count = 0;
+
+    int obj_height = GET_BIT(ppu->reg_lcdc, LCDC_OBJ_SIZE_BIT) ? OBJ_HEIGHT_1 : OBJ_HEIGHT_0;
+
+    // Less x coord - higher priority, less OAM index - higher priority if coords are same
+
+    for (char i = 0; i < OAM_SIZE / OAM_ENTRY_SIZE; i++)
+    {
+        uint8_t obj_y_offs = ppu->oam[OAM_ENTRY_SIZE * i];
+        uint8_t obj_x_offs = ppu->oam[OAM_ENTRY_SIZE * i + 1];
+
+        if (obj_y_offs - OBJ_GLOBAL_Y_OFFSET <= ppu->reg_ly &&
+            ppu->reg_ly < obj_y_offs - OBJ_GLOBAL_Y_OFFSET + obj_height)
+        {
+            // Less value - higher priority
+            ppu->sprite_draw_order[ppu->line_sprite_count++] = (obj_x_offs << 8) | i;
+
+            if (ppu->line_sprite_count >= MAX_SPRITE_PER_LINE)
+                break;
+        }
+    }
+
+    // Draw order - priorities from less to high
+    qsort(ppu->sprite_draw_order, ppu->line_sprite_count, sizeof(int), ppu_draw_order_cmp);
 }
