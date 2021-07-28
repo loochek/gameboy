@@ -39,12 +39,23 @@ typedef struct gb_ppu
     uint8_t reg_scx;
     uint8_t reg_scy;
 
+    // Window position
+
+    uint8_t reg_wx;
+    uint8_t reg_wy;
+
     // Palletes
 
     uint8_t reg_bgp;
 
     uint8_t *vram;
     uint8_t *oam;
+
+    /// Internal window line counter
+    int window_line;
+
+    /// WY update takes effect only on next frame
+    int delayed_wy;
 
     /// Clock cycles counter for PPU updating
     int cycles_counter;
@@ -135,6 +146,22 @@ gbstatus_e ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out);
 gbstatus_e ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out);
 
 /**
+ * Emulates WX register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
+ * Emulates WY register reading
+ * 
+ * \param ppu PPU instance
+ * \param value_ptr Where to write value
+ */
+gbstatus_e ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out);
+
+/**
  * Emulates BGP register reading
  * 
  * \param ppu PPU instance
@@ -207,6 +234,22 @@ gbstatus_e ppu_scx_write(gb_ppu_t *ppu, uint8_t value);
  * \param value Value to write
  */
 gbstatus_e ppu_scy_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the WX register
+ * 
+ * \param ppu PPU instance
+ * \param value Value to write
+ */
+gbstatus_e ppu_wx_write(gb_ppu_t *ppu, uint8_t value);
+
+/**
+ * Emulates writing to the WY register
+ * 
+ * \param ppu PPU instance
+ * \param value Value to write
+ */
+gbstatus_e ppu_wy_write(gb_ppu_t *ppu, uint8_t value);
 
 /**
  * Emulates writing to the BGP register

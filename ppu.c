@@ -5,10 +5,12 @@
 #define VRAM_SIZE 0x2000
 #define OAM_SIZE  0xA0
 
-#define LCDC_BG_WIN_ENABLE_BIT 0
-#define LCDC_BG_TILEMAP_BIT    3
-#define LCDC_BG_TILEDATA_BIT   4
-#define LCDC_PPU_ON_BIT        7
+#define LCDC_BG_WIN_ENABLE_BIT   0
+#define LCDC_BG_TILEMAP_BIT      3
+#define LCDC_BG_WIN_TILEDATA_BIT 4
+#define LCDC_WIN_ENABLE_BIT      5
+#define LCDC_WIN_TILEMAP_BIT     6
+#define LCDC_PPU_ON_BIT          7
 
 #define STAT_STATE_BIT0         0
 #define STAT_STATE_BIT1         1
@@ -125,10 +127,16 @@ gbstatus_e ppu_reset(gb_ppu_t *ppu)
     ppu->reg_scx  = 0x00;
     ppu->reg_scy  = 0x00;
     ppu->reg_bgp  = 0xFC;
+    ppu->reg_wy   = 0x00;
+    ppu->reg_wy   = 0x00;
 
     ppu->lcdc_blocked = false;
     ppu->next_state   = STATE_OBJ_SEARCH;
     ppu->clocks_to_next_state = 0;
+
+    ppu->window_line = 0;
+    ppu->delayed_wy  = -1;
+
     return GBSTATUS_OK;
 }
 
@@ -280,7 +288,15 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
         case STATE_VBLANK_LAST_LINE_INC:
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
+
             ppu->lcdc_blocked = false;
+            ppu->window_line  = 0;
+
+            if (ppu->delayed_wy != -1)
+            {
+                ppu->reg_wy = ppu->delayed_wy;
+                ppu->delayed_wy = -1;
+            }
 
             ppu->next_state = STATE_OBJ_SEARCH;
             ppu->clocks_to_next_state = STATE_VBLANK_INC_DURATION;
@@ -371,6 +387,34 @@ gbstatus_e ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out)
     }
 
     *value_out = ppu->reg_scy;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    *value_out = ppu->reg_wx;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    *value_out = ppu->reg_wy;
     return GBSTATUS_OK;
 }
 
@@ -500,6 +544,34 @@ gbstatus_e ppu_scy_write(gb_ppu_t *ppu, uint8_t value)
     return GBSTATUS_OK;
 }
 
+gbstatus_e ppu_wx_write(gb_ppu_t *ppu, uint8_t value)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    ppu->reg_wx = value;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e ppu_wy_write(gb_ppu_t *ppu, uint8_t value)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (ppu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
+        return status;
+    }
+
+    ppu->delayed_wy = value;
+    return GBSTATUS_OK;
+}
+
 gbstatus_e ppu_bgp_write(gb_ppu_t *ppu, uint8_t value)
 {
     gbstatus_e status = GBSTATUS_OK;
@@ -567,35 +639,80 @@ static void ppu_render_scanline(gb_ppu_t *ppu)
     if (GET_BIT(ppu->reg_lcdc, LCDC_BG_WIN_ENABLE_BIT))
     {
         // Background and Window are enabled
+        // Background
 
-        uint16_t tilemap_addr = GET_BIT(ppu->reg_lcdc, LCDC_BG_TILEMAP_BIT) ? TILEMAP1_ADDR : TILEMAP0_ADDR;
+        uint16_t bg_tilemap_addr = GET_BIT(ppu->reg_lcdc, LCDC_BG_TILEMAP_BIT) ? TILEMAP1_ADDR : TILEMAP0_ADDR;
 
         int bg_line = (ppu->reg_scy + ppu->reg_ly) % (BG_HEIGHT * TILE_HEIGHT);
 
-        int tile_row    = bg_line / TILE_HEIGHT;
-        int tile_offs_y = bg_line % TILE_HEIGHT;
+        int bg_tile_row    = bg_line / TILE_HEIGHT;
+        int bg_tile_offs_y = bg_line % TILE_HEIGHT;
 
         for (int i = 0; i < GB_SCREEN_WIDTH; i++)
         {
             int bg_col = (ppu->reg_scx + i) % (BG_WIDTH * TILE_WIDTH);
 
-            int tile_col    = bg_col / TILE_WIDTH;
-            int tile_offs_x = bg_col % TILE_WIDTH;
+            int bg_tile_col    = bg_col / TILE_WIDTH;
+            int bg_tile_offs_x = bg_col % TILE_WIDTH;
 
-            uint8_t tile_id = ppu->vram[tilemap_addr + tile_row * BG_WIDTH + tile_col];
+            uint8_t tile_id = ppu->vram[bg_tilemap_addr + bg_tile_row * BG_WIDTH + bg_tile_col];
 
             // two addressing modes
             uint16_t tiledata_addr = 0;
-            if (GET_BIT(ppu->reg_lcdc, LCDC_BG_TILEDATA_BIT))
+            if (GET_BIT(ppu->reg_lcdc, LCDC_BG_WIN_TILEDATA_BIT))
                 tiledata_addr = TILEDATA1_ADDR + tile_id * 16; // one tile takes 16 bytes
             else
                 tiledata_addr = TILEDATA0_ADDR + (128 + (int8_t)tile_id) * 16;
 
-            int pixel_pallete_id = GET_TILE_PIXEL(tiledata_addr, tile_offs_y, tile_offs_x);
+            int pixel_pallete_id = GET_TILE_PIXEL(tiledata_addr, bg_tile_offs_y, bg_tile_offs_x);
 
             // apply pallete
-            ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + i] = (ppu->reg_bgp >> (pixel_pallete_id * 2)) & 0x3;
-                    
+            ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + i] = (ppu->reg_bgp >> (pixel_pallete_id * 2)) & 0x3;  
+        }
+
+        if (GET_BIT(ppu->reg_lcdc, LCDC_WIN_ENABLE_BIT))
+        {
+            // Window
+
+            if (ppu->reg_wx < GB_SCREEN_WIDTH + 7 && ppu->reg_wy < GB_SCREEN_HEIGHT && ppu->reg_ly >= ppu->reg_wy)
+            {
+                uint16_t win_tilemap_addr = GET_BIT(ppu->reg_lcdc, LCDC_WIN_TILEMAP_BIT) ? TILEMAP1_ADDR : TILEMAP0_ADDR;
+
+                int win_tile_row    = ppu->window_line / TILE_HEIGHT;
+                int win_tile_offs_y = ppu->window_line % TILE_HEIGHT;
+
+                int window_col = 0;
+                if (ppu->reg_wx < 7)
+                    window_col = 7 - ppu->reg_wx;
+
+                int win_x_offs = ppu->reg_wx - 7;
+                if (win_x_offs < 0)
+                    win_x_offs = 0;
+
+                for (int i = win_x_offs; i < GB_SCREEN_WIDTH; i++)
+                {
+                    int win_tile_col    = window_col / TILE_WIDTH;
+                    int win_tile_offs_x = window_col % TILE_WIDTH;
+
+                    uint8_t tile_id = ppu->vram[win_tilemap_addr + win_tile_row * BG_WIDTH + win_tile_col];
+
+                    // two addressing modes
+                    uint16_t tiledata_addr = 0;
+                    if (GET_BIT(ppu->reg_lcdc, LCDC_BG_WIN_TILEDATA_BIT))
+                        tiledata_addr = TILEDATA1_ADDR + tile_id * 16; // one tile takes 16 bytes
+                    else
+                        tiledata_addr = TILEDATA0_ADDR + (128 + (int8_t)tile_id) * 16;
+
+                    int pixel_pallete_id = GET_TILE_PIXEL(tiledata_addr, win_tile_offs_y, win_tile_offs_x);
+
+                    // apply pallete
+                    ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + i] = (ppu->reg_bgp >> (pixel_pallete_id * 2)) & 0x3;
+                
+                    window_col++;
+                }
+
+                ppu->window_line++;
+            }
         }
     }
     else

@@ -145,7 +145,7 @@ gbstatus_e cpu_reset(gb_cpu_t *cpu)
     cpu->reg_de = 0x00D8;
     cpu->reg_hl = 0x014D;
     cpu->sp     = 0xFFFE;
-    cpu->pc     = 0x0100;
+    cpu->pc     = 0x0000;
 
     cpu->ime      = false;
     cpu->halted   = false;

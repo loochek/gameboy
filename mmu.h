@@ -1,6 +1,7 @@
 #ifndef MMU_H
 #define MMU_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "gbstatus.h"
 
@@ -24,6 +25,9 @@ typedef struct gb_mmu
 
     /// Pointer to the parent Gameboy structure
     struct gb *gb;
+
+    /// First 256 bytes are mapped to the bootrom instead of cartridge after power-on
+    bool bootrom_mapped;
 
     /// Debug thing
     char serial_data;
