@@ -6,6 +6,7 @@
 #define MEM_ACCESS_DURATION 4
 
 #define DISASM(instr, ...)
+//#define DISASM(instr, ...) printf(instr "\n", ##__VA_ARGS__)
 
 /// Sets 7th bit of the flags register
 #define SET_Z(val) (cpu->reg_f = (cpu->reg_f & 0x7F) | ((val) << 7))
@@ -1872,8 +1873,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
         GBCHK(cpu_jump(cpu, imm_val16));
 
-        /// TODO: enable interrupts here
-
+        cpu->ime = true
         DISASM("reti");
         break;
 #pragma endregion
