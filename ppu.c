@@ -190,6 +190,19 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
         switch (ppu->next_state)
         {
         case STATE_OBJ_SEARCH:
+            if (ppu->reg_ly == ppu->reg_lyc)
+            {
+                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 1);
+
+                if (GET_BIT(ppu->reg_stat, STAT_LYC_INT_BIT) && !ppu->lcdc_blocked)
+                {
+                    GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
+                    ppu->lcdc_blocked = true;
+                }
+            }
+            else
+                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
+                
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 1);
 
@@ -199,30 +212,30 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 ppu->lcdc_blocked = true;
             }
 
-            ppu_search_obj(ppu);
-
             ppu->next_state = STATE_DRAWING;
             ppu->clocks_to_next_state = STATE_OBJ_SEARCH_DURATION;
             break;
 
         case STATE_DRAWING:
+            ppu_search_obj(ppu);
+
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 1);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 1);
-
-            ppu_render_scanline(ppu);
 
             ppu->next_state = STATE_HBLANK;
             ppu->clocks_to_next_state = STATE_DRAWING_DURATION;
             break;
 
         case STATE_HBLANK:
+            ppu_render_scanline(ppu);
+
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
 
             if (GET_BIT(ppu->reg_stat, STAT_HBLANK_INT_BIT) && !ppu->lcdc_blocked)
             {
                 GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
-                ppu->lcdc_blocked = false;
+                ppu->lcdc_blocked = true;
             }
 
             ppu->next_state = STATE_HBLANK_INC;
@@ -230,21 +243,8 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
             break;
 
         case STATE_HBLANK_INC:
-            ppu->reg_ly++;
             ppu->lcdc_blocked = false;
-
-            if (ppu->reg_ly == ppu->reg_lyc)
-            {
-                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 1);
-
-                if (GET_BIT(ppu->reg_stat, STAT_LYC_INT_BIT))
-                {
-                    GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
-                    ppu->lcdc_blocked = true;
-                }
-            }
-            else
-                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
+            ppu->reg_ly++;
 
             if (ppu->reg_ly >= GB_SCREEN_HEIGHT)
                 ppu->next_state = STATE_VBLANK;
@@ -278,19 +278,6 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
         case STATE_VBLANK_INC:
             ppu->reg_ly++;
             ppu->lcdc_blocked = false;
-
-            if (ppu->reg_ly == ppu->reg_lyc)
-            {
-                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 1);
-
-                if (GET_BIT(ppu->reg_stat, STAT_LYC_INT_BIT))
-                {
-                    GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
-                    ppu->lcdc_blocked = true;
-                }
-            }
-            else
-                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
 
             if (ppu->reg_ly >= GB_SCREEN_HEIGHT + 10 - 1)
                 ppu->next_state = STATE_VBLANK_LAST_LINE;

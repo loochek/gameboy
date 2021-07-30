@@ -170,6 +170,8 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
     {
         cpu->halted = false;
         cpu->pc++;
+
+        GBCHK(sync_with_cpu(cpu->gb, 4)); // exiting halt mode
     }
 
     if (!cpu->ime)
