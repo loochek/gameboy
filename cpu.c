@@ -1875,7 +1875,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
         GBCHK(cpu_jump(cpu, imm_val16));
 
-        cpu->ime = true
+        cpu->ime = true;
         DISASM("reti");
         break;
 #pragma endregion

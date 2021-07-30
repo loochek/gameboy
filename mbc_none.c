@@ -87,8 +87,7 @@ gbstatus_e mbc_none_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
     case 0x5000:
     case 0x6000:
     case 0x7000:
-        // ROM
-        cart->rom[addr] = byte;
+        // ROM writing is not allowed
         break;
 
     case 0xA000:

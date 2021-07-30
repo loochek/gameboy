@@ -14,7 +14,8 @@ The emulator passes Blargg's cpu_instr, instr_timing, mem_timing tests.
 Tested games:
 * Super Mario Land - looks playable
 * The Legend of Zelda: Link's Awakening - looks playable
-* Tetris - menu works, but there is garbage on the screen instead of main game screen
+* Tetris - looks playable
+* Dr. Mario - hang instead of gameplay
 
 ## Building
 
