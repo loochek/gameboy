@@ -13,9 +13,13 @@ The emulator passes Blargg's cpu_instr, instr_timing, mem_timing tests.
 
 Tested games:
 * Super Mario Land - looks playable
+* Super Mario Land 2 - looks playable
 * The Legend of Zelda: Link's Awakening - looks playable
+* Kirby's Dream Land - looks playable
 * Tetris - looks playable
-* Dr. Mario - hang instead of gameplay
+* Dr. Mario - looks playable
+* Bomb Jack - looks playable
+* Ant Soldiers - looks playable
 
 ## Building
 
