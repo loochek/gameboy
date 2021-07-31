@@ -20,8 +20,6 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
         return status;
     }
 
-    strncpy(cart->rom_file_path, rom_path, MAX_ROM_PATH_LEN);
-
     FILE *rom_file = fopen(rom_path, "rb");
     if (rom_file == NULL)
     {
@@ -148,15 +146,17 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
         break;
     }
 
+    strncpy(cart->rom_file_path, rom_path, MAX_ROM_PATH_LEN);
+
+    strncpy(cart->game_title, (char*)&cart->rom[GAME_TITLE_ADDR], GAME_TITLE_LEN);
+    cart->game_title[GAME_TITLE_LEN] = '\0';
+
     if (cart->battery_backed)
     {
         // Try to load SRAM save
         // Don't panic if failed
         cart_load_save(cart);
     }
-
-    strncpy(cart->game_title, (char*)&cart->rom[GAME_TITLE_ADDR], GAME_TITLE_LEN);
-    cart->game_title[GAME_TITLE_LEN] = '\0';
 
     fclose(rom_file);
     return GBSTATUS_OK;
