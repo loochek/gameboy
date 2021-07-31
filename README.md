@@ -1,4 +1,4 @@
-(Maybe in the future) Gameboy emulator.
+Yet another Gameboy emulator.
 
 Implemented (at least I think so) features:
 * Emulation of all CPU instructions
@@ -27,4 +27,4 @@ Just `make`. Supports both Clang and GCC. Requires CSFML (`sudo apt install libc
 
 ##  Gallery
 
-![](screenshots/super_mario_land.png) ![](screenshots/links_awakening.png)
+![](screenshots/super_mario_land.png) ![](screenshots/links_awakening.png) ![](screenshots/kirby.png) ![](screenshots/vrally.png) ![](screenshots/ant_soldiers.png)
