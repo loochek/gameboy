@@ -7,7 +7,7 @@ Implemented (at least I think so) features:
 * Interrupts
 * Timer
 * Input
-* (Inaccurate and quite faulty) PPU implementation: background, window, sprites, OAM DMA
+* Quite inaccurate, but full PPU implementation: background, window, sprites, OAM DMA
 
 The emulator passes Blargg's cpu_instr, instr_timing, mem_timing tests.
 

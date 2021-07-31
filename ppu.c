@@ -234,8 +234,6 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
             break;
 
         case STATE_DRAWING:
-            ppu_search_obj(ppu);
-
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 1);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 1);
 
@@ -244,8 +242,9 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
             break;
 
         case STATE_HBLANK:
+            ppu_search_obj(ppu);
             ppu_render_scanline(ppu);
-
+            
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
 
