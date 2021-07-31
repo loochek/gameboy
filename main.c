@@ -1,5 +1,6 @@
 #include <SFML/Graphics.h>
 #include <stdio.h>
+#include <string.h>
 #include "gb.h"
 #include "cart.h"
 
@@ -140,6 +141,12 @@ gbstatus_e run(const char *rom_path)
         goto cleanup3;
 
     sfRenderWindow_setFramerateLimit(frontend.sf_window, 60);
+
+    char window_title[GAME_TITLE_LEN + 20];
+    strncpy(window_title, cart.game_title, GAME_TITLE_LEN);
+    strcat(window_title, " - gb");
+
+    sfRenderWindow_setTitle(frontend.sf_window, window_title);
 
     while (sfRenderWindow_isOpen(frontend.sf_window))
     {

@@ -201,7 +201,7 @@ gbstatus_e cart_deinit(gb_cart_t *cart)
 
     if (cart->battery_backed)
     {
-        char save_path[MAX_ROM_PATH_LEN + 10];
+        char save_path[MAX_ROM_PATH_LEN + 10] = {0};
         strncpy(save_path, cart->rom_file_path, MAX_ROM_PATH_LEN);
         strcat(save_path, ".sav");
 
@@ -237,7 +237,7 @@ static gbstatus_e cart_load_save(gb_cart_t *cart)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    char save_path[MAX_ROM_PATH_LEN + 10];
+    char save_path[MAX_ROM_PATH_LEN + 10] = {0};
     strncpy(save_path, cart->rom_file_path, MAX_ROM_PATH_LEN);
     strcat(save_path, ".sav");
 
