@@ -6,12 +6,11 @@
 
 struct gb_cart;
 
+#define MAX_ROM_PATH_LEN 100
+#define GAME_TITLE_LEN   16
+
 #define ROM_BANK_SIZE  0x4000
 #define SRAM_BANK_SIZE 0x2000
-
-#define CART_TYPE_ADDR 0x147
-#define ROM_SIZE_ADDR  0x148
-#define RAM_SIZE_ADDR  0x149
 
 typedef gbstatus_e (*cart_read_func_t )(struct gb_cart *cart, uint16_t addr, uint8_t *byte_out);
 typedef gbstatus_e (*cart_write_func_t)(struct gb_cart *cart, uint16_t addr, uint8_t byte);
@@ -36,6 +35,12 @@ typedef struct gb_cart
 
     /// RAM size in banks
     int ram_size;
+
+    bool battery_backed;
+
+    char rom_file_path[MAX_ROM_PATH_LEN + 1];
+
+    char game_title[GAME_TITLE_LEN + 1];
 
     cart_read_func_t  mbc_read_func;
     cart_write_func_t mbc_write_func;

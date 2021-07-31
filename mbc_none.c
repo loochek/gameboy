@@ -11,16 +11,6 @@ gbstatus_e mbc_none_init(gb_cart_t *cart)
         return status;
     }
 
-    // Some games uses external RAM even without mapper
-
-    cart->ram = calloc(SRAM_BANK_SIZE, sizeof(uint8_t));
-    if (cart->ram == NULL)
-    {
-        GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
-        return status;
-    }
-
-    cart->ram_size = 1;
     return GBSTATUS_OK;
 }
 
@@ -113,6 +103,5 @@ gbstatus_e mbc_none_deinit(gb_cart_t *cart)
         return status;
     }
 
-    free(cart->ram);
     return GBSTATUS_OK;
 }

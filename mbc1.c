@@ -24,47 +24,14 @@ gbstatus_e mbc1_init(gb_cart_t *cart)
         return status;
     }
 
-    uint8_t ram_size_header = cart->rom[RAM_SIZE_ADDR];
-    switch(ram_size_header)
-    {
-    case 0x03:
-        cart->ram_size = 4;
-        break;
-
-    case 0x04:
-        cart->ram_size = 16;
-        break;
-
-    case 0x05:
-        cart->ram_size = 8;
-        break;
-
-    default:
-        cart->ram_size = 1;
-        break;
-    }
-
-    cart->ram = calloc(cart->ram_size * SRAM_BANK_SIZE, sizeof(uint8_t));
-    if (cart->ram == NULL)
-    {
-        GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
-        goto error_handler0;
-    }
-
     cart->mbc_state = calloc(1, sizeof(mbc1_state_t));
     if (cart->mbc_state == NULL)
     {
         GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
-        goto error_handler1;
+        return status;
     }
 
     return GBSTATUS_OK;
-    
-error_handler1:
-    free(cart->ram);
-
-error_handler0:
-    return status;
 }
 
 gbstatus_e mbc1_reset(gb_cart_t *cart)
@@ -263,11 +230,6 @@ gbstatus_e mbc1_deinit(gb_cart_t *cart)
         return status;
     }
 
-    // FILE *sram_file = fopen("sram.bin", "wb");
-    // fwrite(cart->ram, sizeof(uint8_t), cart->ram_size * SRAM_BANK_SIZE, sram_file);
-    // fclose(sram_file);
-
-    free(cart->ram);
     free(cart->mbc_state);
     return GBSTATUS_OK;
 }

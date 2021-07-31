@@ -3,7 +3,7 @@
 Implemented (at least I think so) features:
 * Emulation of all CPU instructions
 * Memory bus with RAM and redirection of MMIO requests to the peripherals
-* MBC1 and external cartridge RAM
+* MBC1, external cartridge RAM with save/load (battery emulation)
 * Interrupts
 * Timer
 * Input

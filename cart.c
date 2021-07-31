@@ -1,6 +1,14 @@
+#include <string.h>
 #include "cart.h"
 #include "mbc_none.h"
 #include "mbc1.h"
+
+#define GAME_TITLE_ADDR 0x134
+#define CART_TYPE_ADDR  0x147
+#define ROM_SIZE_ADDR   0x148
+#define RAM_SIZE_ADDR   0x149
+
+static gbstatus_e cart_load_save(gb_cart_t *cart);
 
 gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
 {
@@ -12,7 +20,9 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
         return status;
     }
 
-    FILE *rom_file = fopen(rom_path, "r");
+    strncpy(cart->rom_file_path, rom_path, MAX_ROM_PATH_LEN);
+
+    FILE *rom_file = fopen(rom_path, "rb");
     if (rom_file == NULL)
     {
         GBSTATUS(GBSTATUS_IO_FAIL, "unable to open ROM file");
@@ -68,6 +78,36 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
 
     cart->rom_size = rom_size_header / ROM_BANK_SIZE;
 
+    uint8_t ram_size_header = cart->rom[RAM_SIZE_ADDR];
+    switch (ram_size_header)
+    {
+    case 0x03:
+        cart->ram_size = 4;
+        break;
+
+    case 0x04:
+        cart->ram_size = 16;
+        break;
+
+    case 0x05:
+        cart->ram_size = 8;
+        break;
+
+    default:
+        // Allocate some fallback SRAM anyway
+        cart->ram_size = 1;
+        break;
+    }
+
+    cart->ram = calloc(cart->ram_size * SRAM_BANK_SIZE, sizeof(uint8_t));
+    if (cart->ram == NULL)
+    {
+        GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
+        goto error_handler2;
+    }
+
+    cart->battery_backed = false;
+
     uint8_t mapper = cart->rom[CART_TYPE_ADDR];
     switch (mapper)
     {
@@ -75,7 +115,7 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
         // No mapper
         status = mbc_none_init(cart);
         if (status != GBSTATUS_OK)
-            goto error_handler2;
+            goto error_handler3;
 
         cart->mbc_read_func   = mbc_none_read;
         cart->mbc_write_func  = mbc_none_write;
@@ -86,26 +126,43 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
     case 0x01:
     case 0x02:
     case 0x03:
-        // MBC1
+        // MBC1(+RAM(+BATTERY))
         status = mbc1_init(cart);
         if (status != GBSTATUS_OK)
-            goto error_handler2;
+            goto error_handler3;
 
         cart->mbc_read_func   = mbc1_read;
         cart->mbc_write_func  = mbc1_write;
         cart->mbc_reset_func  = mbc1_reset;
         cart->mbc_deinit_func = mbc1_deinit;
+
+        if (mapper == 0x03)
+            cart->battery_backed = true;
+
         break;
 
     default:
         GBSTATUS(GBSTATUS_NOT_IMPLEMENTED, "unsupported mapper");
-        goto error_handler2;
+        goto error_handler3;
 
         break;
     }
 
+    if (cart->battery_backed)
+    {
+        // Try to load SRAM save
+        // Don't panic if failed
+        cart_load_save(cart);
+    }
+
+    strncpy(cart->game_title, (char*)&cart->rom[GAME_TITLE_ADDR], GAME_TITLE_LEN);
+    cart->game_title[GAME_TITLE_LEN] = '\0';
+
     fclose(rom_file);
     return GBSTATUS_OK;
+
+error_handler3:
+    free(cart->ram);
 
 error_handler2:
     free(cart->rom);
@@ -142,8 +199,92 @@ gbstatus_e cart_deinit(gb_cart_t *cart)
         return status;
     }
 
+    if (cart->battery_backed)
+    {
+        char save_path[MAX_ROM_PATH_LEN + 10];
+        strncpy(save_path, cart->rom_file_path, MAX_ROM_PATH_LEN);
+        strcat(save_path, ".sav");
+
+        FILE *save_file = fopen(save_path, "wb");
+        if (save_file == NULL)
+        {
+            GBSTATUS(GBSTATUS_IO_FAIL, "unable to open save file");
+            return status;
+        }
+
+        int bytes_written = fwrite(cart->ram, sizeof(uint8_t), cart->ram_size * SRAM_BANK_SIZE, save_file);
+        if (bytes_written != cart->ram_size * SRAM_BANK_SIZE)
+        {
+            GBSTATUS(GBSTATUS_IO_FAIL, "unable to write save data");
+            return status;
+        }
+        
+        if (fclose(save_file) != 0)
+        {
+            GBSTATUS(GBSTATUS_IO_FAIL, "unable to write save data");
+            return status;
+        }
+    }
+
     GBCHK(cart->mbc_deinit_func(cart));
+    free(cart->ram);
     free(cart->rom);
 
     return GBSTATUS_OK;
+}
+
+static gbstatus_e cart_load_save(gb_cart_t *cart)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    char save_path[MAX_ROM_PATH_LEN + 10];
+    strncpy(save_path, cart->rom_file_path, MAX_ROM_PATH_LEN);
+    strcat(save_path, ".sav");
+
+    FILE *save_file = fopen(save_path, "rb");
+    if (save_file == NULL)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open save file");
+        goto error_handler0;
+    }
+
+    if (fseek(save_file, 0, SEEK_END) != 0)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "fseek fail");
+        goto error_handler1;
+    }
+
+    int save_file_size = 0;
+    if ((save_file_size = ftell(save_file)) == -1)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "ftell fail");
+        goto error_handler1;
+    }
+
+    if (fseek(save_file, 0, SEEK_SET) != 0)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "fseek fail");
+        goto error_handler1;
+    }
+
+    if (save_file_size != cart->ram_size * SRAM_BANK_SIZE)
+    {
+        GBSTATUS(GBSTATUS_CART_FAIL, "save file size is different from SRAM size");
+        goto error_handler1;
+    }
+
+    int bytes_read = fread(cart->ram, sizeof(uint8_t), save_file_size, save_file);
+    if (bytes_read != save_file_size)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read save file");
+        goto error_handler1;
+    }
+
+    return GBSTATUS_OK;
+
+error_handler1:
+    fclose(save_file);
+
+error_handler0:
+    return status;
 }
