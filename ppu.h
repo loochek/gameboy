@@ -74,6 +74,9 @@ typedef struct gb_ppu
     bool new_frame_ready;
     char *framebuffer;
 
+    /// Holds original BG and Window colors to handle OBJ priority bit
+    char *bg_scanline_buffer;
+
     int sprite_draw_order[MAX_SPRITE_PER_LINE];
 
     /// Draw order size

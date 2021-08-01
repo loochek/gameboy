@@ -77,6 +77,7 @@
 (  ((ppu->vram[(addr) + 2 * (y_offs)    ] >> (7 - (x_offs))) & 0x1) |      \
   (((ppu->vram[(addr) + 2 * (y_offs) + 1] >> (7 - (x_offs))) & 0x1) << 1))
 
+static gbstatus_e ppu_handle_lyc(gb_ppu_t *ppu);
 
 static void ppu_render_scanline    (gb_ppu_t *ppu);
 static void ppu_render_bg_scanline (gb_ppu_t *ppu);
@@ -114,17 +115,27 @@ gbstatus_e ppu_init(gb_ppu_t *ppu, struct gb *gb)
     }
 
     ppu->framebuffer = calloc(GB_SCREEN_WIDTH * GB_SCREEN_HEIGHT, sizeof(char));
-    if (ppu->oam == NULL)
+    if (ppu->framebuffer == NULL)
     {
         GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
         goto error_handler2;
     }
 
+    ppu->bg_scanline_buffer = calloc(GB_SCREEN_WIDTH, sizeof(char));
+    if (ppu->bg_scanline_buffer == NULL)
+    {
+        GBSTATUS(GBSTATUS_BAD_ALLOC, "unable to allocate memory");
+        goto error_handler3;
+    }
+
     status = ppu_reset(ppu);
     if (status != GBSTATUS_OK)
-        goto error_handler3;
+        goto error_handler4;
 
     return GBSTATUS_OK;
+
+error_handler4:
+    free(ppu->bg_scanline_buffer);
 
 error_handler3:
     free(ppu->framebuffer);
@@ -207,18 +218,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
         switch (ppu->next_state)
         {
         case STATE_OBJ_SEARCH:
-            if (ppu->reg_ly == ppu->reg_lyc)
-            {
-                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 1);
-
-                if (GET_BIT(ppu->reg_stat, STAT_LYC_INT_BIT) && !ppu->lcdc_blocked)
-                {
-                    GBCHK(int_request(&gb->intr_ctrl, INT_LCDC));
-                    ppu->lcdc_blocked = true;
-                }
-            }
-            else
-                SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
+            GBCHK(ppu_handle_lyc(ppu));
                 
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 1);
@@ -244,7 +244,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
         case STATE_HBLANK:
             ppu_search_obj(ppu);
             ppu_render_scanline(ppu);
-            
+
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
 
@@ -281,6 +281,8 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 ppu->new_frame_ready = true;
             }
 
+            GBCHK(ppu_handle_lyc(ppu));
+
             if (GET_BIT(ppu->reg_stat, STAT_VBLANK_INT_BIT) && !ppu->lcdc_blocked)
             {
                 GBCHK(int_request(&gb->intr_ctrl, INT_LCDC));
@@ -305,6 +307,8 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 
         case STATE_VBLANK_LAST_LINE:
             ppu->reg_ly = 0;
+
+            GBCHK(ppu_handle_lyc(ppu));
         
             ppu->next_state = STATE_VBLANK_LAST_LINE_INC;
             ppu->clocks_to_next_state = STATE_VBLANK_DURATION;
@@ -775,6 +779,25 @@ gbstatus_e ppu_deinit(gb_ppu_t *ppu)
     free(ppu->vram);
     free(ppu->oam);
     free(ppu->framebuffer);
+    free(ppu->bg_scanline_buffer);
+    return GBSTATUS_OK;
+}
+
+static gbstatus_e ppu_handle_lyc(gb_ppu_t *ppu)
+{
+    if (ppu->reg_ly == ppu->reg_lyc)
+    {
+        SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 1);
+
+        if (GET_BIT(ppu->reg_stat, STAT_LYC_INT_BIT) && !ppu->lcdc_blocked)
+        {
+            GBCHK(int_request(&ppu->gb->intr_ctrl, INT_LCDC));
+            ppu->lcdc_blocked = true;
+        }
+    }
+    else
+        SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
+
     return GBSTATUS_OK;
 }
 
@@ -826,6 +849,7 @@ static void ppu_render_bg_scanline(gb_ppu_t *ppu)
 
         int pixel_pallete_id = GET_TILE_PIXEL(tiledata_addr, bg_tile_offs_y, bg_tile_offs_x);
 
+        ppu->bg_scanline_buffer[x] = pixel_pallete_id;
         ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + x] = (ppu->reg_bgp >> (pixel_pallete_id * 2)) & 0x3;  
     }
 }
@@ -866,6 +890,7 @@ static void ppu_render_win_scanline(gb_ppu_t *ppu)
 
             int pixel_pallete_id = GET_TILE_PIXEL(tiledata_addr, win_tile_offs_y, win_tile_offs_x);
 
+            ppu->bg_scanline_buffer[x] = pixel_pallete_id;
             ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + x] = (ppu->reg_bgp >> (pixel_pallete_id * 2)) & 0x3;
         
             window_col++;
@@ -926,7 +951,7 @@ static void ppu_render_obj_scanline(gb_ppu_t *ppu)
         {
             int pixel_pallete_id = GET_TILE_PIXEL(tiledata_addr, obj_line, obj_col);
 
-            if ((priority && ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + x] == 0) || !priority)
+            if ((priority && ppu->bg_scanline_buffer[x] == 0) || !priority)
             {
                 if (pixel_pallete_id != 0)
                     ppu->framebuffer[ppu->reg_ly * GB_SCREEN_WIDTH + x] = (obj_pallete >> (pixel_pallete_id * 2)) & 0x3;

@@ -11,7 +11,7 @@ Implemented (at least I think so) features:
 
 The emulator passes Blargg's cpu_instr, instr_timing, mem_timing tests.
 
-Tested games:
+Tested software:
 * Super Mario Land - looks playable
 * Super Mario Land 2 - looks playable
 * The Legend of Zelda: Link's Awakening - looks playable
@@ -20,6 +20,12 @@ Tested games:
 * Dr. Mario - looks playable
 * Bomb Jack - looks playable
 * Ant Soldiers - looks playable
+* V-Rally - looks playable
+* Road Rash - looks playable
+* Oh! Demo - looks as intended
+
+* Kirby's Dream Land 2 - hangs
+* Is That A Demo In Your Pocket? - some visual glitches
 
 ## Building
 
@@ -27,4 +33,4 @@ Just `make`. Supports both Clang and GCC. Requires CSFML (`sudo apt install libc
 
 ##  Gallery
 
-![](screenshots/super_mario_land.png) ![](screenshots/links_awakening.png) ![](screenshots/kirby.png) ![](screenshots/vrally.png) ![](screenshots/ant_soldiers.png)
+![](screenshots/super_mario_land.png) ![](screenshots/links_awakening.png) ![](screenshots/kirby.png) ![](screenshots/vrally.png) ![](screenshots/ant_soldiers.png) ![](screenshots/oh.png)

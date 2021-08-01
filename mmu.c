@@ -48,8 +48,7 @@ gbstatus_e mmu_init(gb_mmu_t *mmu, gb_t *gb)
 
     mmu->ram  = ram;
     mmu->hram = ram + RAM_SIZE;
-
-    mmu->serial_data = 0x00;
+    
     mmu->cart = NULL;
 
     status = mmu_reset(mmu);
@@ -477,24 +476,6 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
             case 0x50:
                 // Bootrom mapping
                 mmu->bootrom_mapped = false;
-                break;
-
-            case 0x01:
-                // Serial transfer data
-                mmu->serial_data = byte;
-                break;
-
-            case 0x02:
-                // Serial transfer control
-                // For debugging
-                if (byte == 0x81)
-                {
-                    printf("%c", (char)mmu->serial_data);
-                    fflush(stdout);
-                    
-                    mmu->serial_data = 0x00;
-                }
-
                 break;
 
             default:

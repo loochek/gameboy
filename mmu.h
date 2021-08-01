@@ -28,9 +28,6 @@ typedef struct gb_mmu
 
     /// First 256 bytes are mapped to the bootrom instead of cartridge after power-on
     bool bootrom_mapped;
-
-    /// Debug thing
-    char serial_data;
 } gb_mmu_t;
 
 /**

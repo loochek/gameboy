@@ -182,6 +182,12 @@ cleanup0:
 
 int main(int argc, const char *argv[])
 {
+    if (argc < 2)
+    {
+        printf("Usage: ./gb <ROM file path>\n");
+        return 0;
+    }
+
     gbstatus_e status = run(argv[1]);
 
     if (status != GBSTATUS_OK)
