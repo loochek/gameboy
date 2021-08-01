@@ -142,7 +142,7 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
     case 0x8000:
     case 0x9000:
         // VRAM
-        GBCHK(ppu_vram_read(gb->ppu, addr, byte_out));
+        GBCHK(ppu_vram_read(&gb->ppu, addr, byte_out));
         break;
 
     case 0xC000:
@@ -184,7 +184,7 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
                 break;
             
             // OAM
-            GBCHK(ppu_oam_read(gb->ppu, addr, byte_out));
+            GBCHK(ppu_oam_read(&gb->ppu, addr, byte_out));
             break;
 
         case 0xF00:
@@ -192,97 +192,97 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
             {
             case 0x0F:
                 // IF (interrupt controller)
-                GBCHK(int_if_read(gb->intr_ctrl, byte_out));
+                GBCHK(int_if_read(&gb->intr_ctrl, byte_out));
                 break;
 
             case 0xFF:
                 // IE (interrupt controller)
-                GBCHK(int_ie_read(gb->intr_ctrl, byte_out));
+                GBCHK(int_ie_read(&gb->intr_ctrl, byte_out));
                 break;
 
             case 0x00:
                 // JOYP (Joypad)
-                GBCHK(joypad_joyp_read(gb->joypad, byte_out));
+                GBCHK(joypad_joyp_read(&gb->joypad, byte_out));
                 break;
 
             case 0x04:
                 // DIV (timer)
-                GBCHK(timer_div_read(gb->timer, byte_out));
+                GBCHK(timer_div_read(&gb->timer, byte_out));
                 break;
 
             case 0x05:
                 // TIMA (timer)
-                GBCHK(timer_tima_read(gb->timer, byte_out));
+                GBCHK(timer_tima_read(&gb->timer, byte_out));
                 break;
 
             case 0x06:
                 // TMA (timer)
-                GBCHK(timer_tma_read(gb->timer, byte_out));
+                GBCHK(timer_tma_read(&gb->timer, byte_out));
                 break;
 
             case 0x07:
                 // TAC (timer)
-                GBCHK(timer_tac_read(gb->timer, byte_out));
+                GBCHK(timer_tac_read(&gb->timer, byte_out));
                 break;
 
             case 0x40:
                 // LCDC (PPU)
-                GBCHK(ppu_lcdc_read(gb->ppu, byte_out));
+                GBCHK(ppu_lcdc_read(&gb->ppu, byte_out));
                 break;
 
             case 0x41:
                 // STAT (PPU)
-                GBCHK(ppu_stat_read(gb->ppu, byte_out));
+                GBCHK(ppu_stat_read(&gb->ppu, byte_out));
                 break;
 
             case 0x42:
                 // SCY (PPU)
-                GBCHK(ppu_scy_read(gb->ppu, byte_out));
+                GBCHK(ppu_scy_read(&gb->ppu, byte_out));
                 break;
 
             case 0x43:
                 // SCX (PPU)
-                GBCHK(ppu_scx_read(gb->ppu, byte_out));
+                GBCHK(ppu_scx_read(&gb->ppu, byte_out));
                 break;
 
             case 0x44:
                 // LY (PPU)
-                GBCHK(ppu_ly_read(gb->ppu, byte_out));
+                GBCHK(ppu_ly_read(&gb->ppu, byte_out));
                 break;
 
             case 0x45:
                 // LYC (PPU)
-                GBCHK(ppu_lyc_read(gb->ppu, byte_out));
+                GBCHK(ppu_lyc_read(&gb->ppu, byte_out));
                 break;
 
             case 0x47:
                 // BGP (PPU)
-                GBCHK(ppu_bgp_read(gb->ppu, byte_out));
+                GBCHK(ppu_bgp_read(&gb->ppu, byte_out));
                 break;
 
             case 0x48:
                 // OBP0 (PPU)
-                GBCHK(ppu_obp0_read(gb->ppu, byte_out));
+                GBCHK(ppu_obp0_read(&gb->ppu, byte_out));
                 break;
 
             case 0x49:
                 // OBP1 (PPU)
-                GBCHK(ppu_obp1_read(gb->ppu, byte_out));
+                GBCHK(ppu_obp1_read(&gb->ppu, byte_out));
                 break;
 
             case 0x4A:
                 // WY (PPU)
-                GBCHK(ppu_wy_read(gb->ppu, byte_out));
+                GBCHK(ppu_wy_read(&gb->ppu, byte_out));
                 break;
 
             case 0x4B:
                 // WX (PPU)
-                GBCHK(ppu_wx_read(gb->ppu, byte_out));
+                GBCHK(ppu_wx_read(&gb->ppu, byte_out));
                 break;
 
             case 0x46:
                 // DMA (PPU)
-                GBCHK(ppu_dma_read(gb->ppu, byte_out));
+                GBCHK(ppu_dma_read(&gb->ppu, byte_out));
                 break;
 
             default:
@@ -334,7 +334,7 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
 
     case 0x8000:
     case 0x9000:
-        GBCHK(ppu_vram_write(gb->ppu, addr, byte));
+        GBCHK(ppu_vram_write(&gb->ppu, addr, byte));
         break;
 
     case 0xC000:
@@ -373,7 +373,7 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
                 break;
             
             // OAM
-            GBCHK(ppu_oam_write(gb->ppu, addr, byte));
+            GBCHK(ppu_oam_write(&gb->ppu, addr, byte));
             break;
 
         case 0xF00:
@@ -381,97 +381,97 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
             {
             case 0x0F:
                 // IF (interrupt controller)
-                GBCHK(int_if_write(gb->intr_ctrl, byte));
+                GBCHK(int_if_write(&gb->intr_ctrl, byte));
                 break;
 
             case 0xFF:
                 // IE (interrupt controller)
-                GBCHK(int_ie_write(gb->intr_ctrl, byte));
+                GBCHK(int_ie_write(&gb->intr_ctrl, byte));
                 break;
 
             case 0x00:
                 // JOYP (Joypad)
-                GBCHK(joypad_joyp_write(gb->joypad, byte));
+                GBCHK(joypad_joyp_write(&gb->joypad, byte));
                 break;
 
             case 0x04:
                 // DIV (timer)
-                GBCHK(timer_div_write(gb->timer, byte));
+                GBCHK(timer_div_write(&gb->timer, byte));
                 break;
 
             case 0x05:
                 // TIMA (timer)
-                GBCHK(timer_tima_write(gb->timer, byte));
+                GBCHK(timer_tima_write(&gb->timer, byte));
                 break;
 
             case 0x06:
                 // TMA (timer)
-                GBCHK(timer_tma_write(gb->timer, byte));
+                GBCHK(timer_tma_write(&gb->timer, byte));
                 break;
 
             case 0x07:
                 // TAC (timer)
-                GBCHK(timer_tac_write(gb->timer, byte));
+                GBCHK(timer_tac_write(&gb->timer, byte));
                 break;
 
             case 0x40:
                 // LCDC (PPU)
-                GBCHK(ppu_lcdc_write(gb->ppu, byte));
+                GBCHK(ppu_lcdc_write(&gb->ppu, byte));
                 break;
 
             case 0x41:
                 // STAT (PPU)
-                GBCHK(ppu_stat_write(gb->ppu, byte));
+                GBCHK(ppu_stat_write(&gb->ppu, byte));
                 break;
 
             case 0x42:
                 // SCY (PPU)
-                GBCHK(ppu_scy_write(gb->ppu, byte));
+                GBCHK(ppu_scy_write(&gb->ppu, byte));
                 break;
 
             case 0x43:
                 // SCX (PPU)
-                GBCHK(ppu_scx_write(gb->ppu, byte));
+                GBCHK(ppu_scx_write(&gb->ppu, byte));
                 break;
 
             case 0x44:
                 // LY (PPU)
-                GBCHK(ppu_ly_write(gb->ppu, byte));
+                GBCHK(ppu_ly_write(&gb->ppu, byte));
                 break;
 
             case 0x45:
                 // LYC (PPU)
-                GBCHK(ppu_lyc_write(gb->ppu, byte));
+                GBCHK(ppu_lyc_write(&gb->ppu, byte));
                 break;
 
             case 0x46:
                 // DMA (PPU)
-                GBCHK(ppu_dma_write(gb->ppu, byte));
+                GBCHK(ppu_dma_write(&gb->ppu, byte));
                 break;
 
             case 0x47:
                 // BGP (PPU)
-                GBCHK(ppu_bgp_write(gb->ppu, byte));
+                GBCHK(ppu_bgp_write(&gb->ppu, byte));
                 break;
 
             case 0x48:
                 // OBP0 (PPU)
-                GBCHK(ppu_obp0_write(gb->ppu, byte));
+                GBCHK(ppu_obp0_write(&gb->ppu, byte));
                 break;
 
             case 0x49:
                 // OBP1 (PPU)
-                GBCHK(ppu_obp1_write(gb->ppu, byte));
+                GBCHK(ppu_obp1_write(&gb->ppu, byte));
                 break;
 
             case 0x4A:
                 // WY (PPU)
-                GBCHK(ppu_wy_write(gb->ppu, byte));
+                GBCHK(ppu_wy_write(&gb->ppu, byte));
                 break;
 
             case 0x4B:
                 // WX (PPU)
-                GBCHK(ppu_wx_write(gb->ppu, byte));
+                GBCHK(ppu_wx_write(&gb->ppu, byte));
                 break;
 
             case 0x50:

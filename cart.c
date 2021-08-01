@@ -8,7 +8,8 @@
 #define ROM_SIZE_ADDR   0x148
 #define RAM_SIZE_ADDR   0x149
 
-static gbstatus_e cart_load_save(gb_cart_t *cart);
+static gbstatus_e cart_load_sram(gb_cart_t *cart);
+static gbstatus_e cart_save_sram(gb_cart_t *cart);
 
 gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
 {
@@ -154,8 +155,8 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
     if (cart->battery_backed)
     {
         // Try to load SRAM save
-        // Don't panic if failed
-        cart_load_save(cart);
+        // Ignore if failed
+        cart_load_sram(cart);
     }
 
     fclose(rom_file);
@@ -201,29 +202,11 @@ gbstatus_e cart_deinit(gb_cart_t *cart)
 
     if (cart->battery_backed)
     {
-        char save_path[MAX_ROM_PATH_LEN + 10] = {0};
-        strncpy(save_path, cart->rom_file_path, MAX_ROM_PATH_LEN);
-        strcat(save_path, ".sav");
+        status = cart_save_sram(cart);
+        if (status != GBSTATUS_OK)
+            GBSTATUS_WARN_PRINT("Unable to save");
 
-        FILE *save_file = fopen(save_path, "wb");
-        if (save_file == NULL)
-        {
-            GBSTATUS(GBSTATUS_IO_FAIL, "unable to open save file");
-            return status;
-        }
-
-        int bytes_written = fwrite(cart->ram, sizeof(uint8_t), cart->ram_size * SRAM_BANK_SIZE, save_file);
-        if (bytes_written != cart->ram_size * SRAM_BANK_SIZE)
-        {
-            GBSTATUS(GBSTATUS_IO_FAIL, "unable to write save data");
-            return status;
-        }
-        
-        if (fclose(save_file) != 0)
-        {
-            GBSTATUS(GBSTATUS_IO_FAIL, "unable to write save data");
-            return status;
-        }
+        status = GBSTATUS_OK;
     }
 
     GBCHK(cart->mbc_deinit_func(cart));
@@ -233,7 +216,7 @@ gbstatus_e cart_deinit(gb_cart_t *cart)
     return GBSTATUS_OK;
 }
 
-static gbstatus_e cart_load_save(gb_cart_t *cart)
+static gbstatus_e cart_load_sram(gb_cart_t *cart)
 {
     gbstatus_e status = GBSTATUS_OK;
 
@@ -269,14 +252,14 @@ static gbstatus_e cart_load_save(gb_cart_t *cart)
 
     if (save_file_size != cart->ram_size * SRAM_BANK_SIZE)
     {
-        GBSTATUS(GBSTATUS_CART_FAIL, "save file size is different from SRAM size");
+        GBSTATUS(GBSTATUS_CART_FAIL, "SRAM dump size is different from cartridge SRAM size");
         goto error_handler1;
     }
 
     int bytes_read = fread(cart->ram, sizeof(uint8_t), save_file_size, save_file);
     if (bytes_read != save_file_size)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read save file");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read SRAM dump");
         goto error_handler1;
     }
 
@@ -287,4 +270,35 @@ error_handler1:
 
 error_handler0:
     return status;
+}
+
+static gbstatus_e cart_save_sram(gb_cart_t *cart)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    char save_path[MAX_ROM_PATH_LEN + 10] = {0};
+    strncpy(save_path, cart->rom_file_path, MAX_ROM_PATH_LEN);
+    strcat(save_path, ".sav");
+
+    FILE *save_file = fopen(save_path, "wb");
+    if (save_file == NULL)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open file");
+        return status;
+    }
+
+    int bytes_written = fwrite(cart->ram, sizeof(uint8_t), cart->ram_size * SRAM_BANK_SIZE, save_file);
+    if (bytes_written != cart->ram_size * SRAM_BANK_SIZE)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "unable to write SRAM dump");
+        return status;
+    }
+    
+    if (fclose(save_file) != 0)
+    {
+        GBSTATUS(GBSTATUS_IO_FAIL, "unable to write SRAM dump");
+        return status;
+    }
+
+    return GBSTATUS_OK;
 }

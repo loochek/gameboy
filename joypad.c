@@ -81,7 +81,7 @@ gbstatus_e joypad_update(gb_joypad_t *joypad, int new_state)
     joypad_update_reg(joypad);
 
     if ((joypad->reg_joyp & 0xF) != 0xF)
-        GBCHK(int_request(joypad->gb->intr_ctrl, INT_JOYPAD));
+        GBCHK(int_request(&joypad->gb->intr_ctrl, INT_JOYPAD));
 
     return GBSTATUS_OK;
 }

@@ -71,6 +71,12 @@ static inline void cpu_instr_bit (gb_cpu_t *cpu, int bit, uint8_t *value_ptr);
 static inline void cpu_instr_res (gb_cpu_t *cpu, int bit, uint8_t *value_ptr);
 static inline void cpu_instr_set (gb_cpu_t *cpu, int bit, uint8_t *value_ptr);
 
+
+/**
+ * Updates the state of peripherals according to elapsed clock cycles.
+ */
+static gbstatus_e sync_with_cpu(gb_cpu_t *cpu, int elapsed_cycles);
+
 /**
  * Emulates a memory read request from the CPU with correct timing
  * 
@@ -171,7 +177,7 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
         cpu->halted = false;
         cpu->pc++;
 
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // exiting halt mode
+        GBCHK(sync_with_cpu(cpu, 4)); // exiting halt mode
     }
 
     if (!cpu->ime)
@@ -179,12 +185,12 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
 
     cpu->ime = false;
 
-    GBCHK(sync_with_cpu(cpu->gb, 8));
+    GBCHK(sync_with_cpu(cpu, 8));
 
     cpu->sp -= 2;
     GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->pc));
 
-    GBCHK(sync_with_cpu(cpu->gb, 4));
+    GBCHK(sync_with_cpu(cpu, 4));
     cpu->pc = int_vec;
 
     return GBSTATUS_OK;
@@ -883,7 +889,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // push r16
 #pragma region
     case 0xC5:
-        sync_with_cpu(cpu->gb, 4); // internal timing
+        sync_with_cpu(cpu, 4); // internal timing
 
         cpu->sp -= 2;
         GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->reg_bc));
@@ -892,7 +898,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xD5:
-        sync_with_cpu(cpu->gb, 4); // internal timing
+        sync_with_cpu(cpu, 4); // internal timing
 
         cpu->sp -= 2;
         GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->reg_de));
@@ -901,7 +907,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xE5:
-        sync_with_cpu(cpu->gb, 4); // internal timing
+        sync_with_cpu(cpu, 4); // internal timing
         
         cpu->sp -= 2;
         GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->reg_hl));
@@ -910,7 +916,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xF5:
-        sync_with_cpu(cpu->gb, 4); // internal timing
+        sync_with_cpu(cpu, 4); // internal timing
         
         cpu->sp -= 2;
         GBCHK(cpu_mem_write_word(cpu, cpu->sp, cpu->reg_af));
@@ -931,7 +937,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
     case 0xF9:
         cpu->sp = cpu->reg_hl;
-        sync_with_cpu(cpu->gb, 4); // internal timing
+        sync_with_cpu(cpu, 4); // internal timing
 
         DISASM("ld sp, hl");
         break;
@@ -1606,28 +1612,28 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 #pragma region
     case 0x03:
         cpu->reg_bc++;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
 
         DISASM("inc bc");
         break;
 
     case 0x13:
         cpu->reg_de++;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
         
         DISASM("inc de");
         break;
 
     case 0x23:
         cpu->reg_hl++;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
         
         DISASM("inc hl");
         break;
 
     case 0x33:
         cpu->sp++;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
         
         DISASM("inc sp");
         break;
@@ -1637,28 +1643,28 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 #pragma region
     case 0x0B:
         cpu->reg_bc--;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
 
         DISASM("dec bc");
         break;
 
     case 0x1B:
         cpu->reg_de--;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
         
         DISASM("dec de");
         break;
 
     case 0x2B:
         cpu->reg_hl--;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
         
         DISASM("dec hl");
         break;
 
     case 0x3B:
         cpu->sp--;
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
         
         DISASM("dec sp");
         break;
@@ -1704,7 +1710,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
         cpu->sp += (int8_t)imm_val8;
 
-        GBCHK(sync_with_cpu(cpu->gb, 8)); // internal
+        GBCHK(sync_with_cpu(cpu, 8)); // internal
 
         DISASM("add sp, %d", (int8_t)imm_val8);
         break;
@@ -1720,7 +1726,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 
         cpu->reg_hl = cpu->sp + (int8_t)imm_val8;
 
-        GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+        GBCHK(sync_with_cpu(cpu, 4)); // internal
 
         DISASM("ld hl, sp%+d", (int8_t)imm_val8);
         break;
@@ -2018,16 +2024,26 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 #pragma endregion
     }
 
-    GBCHK(int_step(cpu->gb->intr_ctrl));
+    GBCHK(int_step(&cpu->gb->intr_ctrl));
     return GBSTATUS_OK;
 }
 
 
+static gbstatus_e sync_with_cpu(gb_cpu_t *cpu, int elapsed_cycles)
+{
+    gb_t *gb = cpu->gb;
+
+    GBCHK(timer_update(&gb->timer, elapsed_cycles));
+    GBCHK(ppu_update(&gb->ppu, elapsed_cycles));
+    
+    return GBSTATUS_OK;
+}
+
 static gbstatus_e cpu_mem_read(gb_cpu_t *cpu, uint16_t addr, uint8_t *byte_out)
 {
     // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_read(cpu->gb->mmu, addr, byte_out));
+    GBCHK(sync_with_cpu(cpu, MEM_ACCESS_DURATION));
+    GBCHK(mmu_read(&cpu->gb->mmu, addr, byte_out));
 
     return GBSTATUS_OK;
 }
@@ -2037,12 +2053,12 @@ static gbstatus_e cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr, uint16_t *word
     uint8_t byte = 0;
 
     // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_read(cpu->gb->mmu, addr, &byte));
+    GBCHK(sync_with_cpu(cpu, MEM_ACCESS_DURATION));
+    GBCHK(mmu_read(&cpu->gb->mmu, addr, &byte));
     *word_out |= byte;
 
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_read(cpu->gb->mmu, addr + 1, &byte));
+    GBCHK(sync_with_cpu(cpu, MEM_ACCESS_DURATION));
+    GBCHK(mmu_read(&cpu->gb->mmu, addr + 1, &byte));
     *word_out |= (byte << 8);
 
     return GBSTATUS_OK;
@@ -2051,8 +2067,8 @@ static gbstatus_e cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr, uint16_t *word
 static gbstatus_e cpu_mem_write(gb_cpu_t *cpu, uint16_t addr, uint8_t byte)
 {
     // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_write(cpu->gb->mmu, addr, byte));
+    GBCHK(sync_with_cpu(cpu, MEM_ACCESS_DURATION));
+    GBCHK(mmu_write(&cpu->gb->mmu, addr, byte));
 
     return GBSTATUS_OK;
 }
@@ -2060,18 +2076,18 @@ static gbstatus_e cpu_mem_write(gb_cpu_t *cpu, uint16_t addr, uint8_t byte)
 static gbstatus_e cpu_mem_write_word(gb_cpu_t *cpu, uint16_t addr, uint16_t word)
 {
     // Memory access takes some time
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_write(cpu->gb->mmu, addr, word & 0xFF));
+    GBCHK(sync_with_cpu(cpu, MEM_ACCESS_DURATION));
+    GBCHK(mmu_write(&cpu->gb->mmu, addr, word & 0xFF));
 
-    GBCHK(sync_with_cpu(cpu->gb, MEM_ACCESS_DURATION));
-    GBCHK(mmu_write(cpu->gb->mmu, addr + 1, word >> 8));
+    GBCHK(sync_with_cpu(cpu, MEM_ACCESS_DURATION));
+    GBCHK(mmu_write(&cpu->gb->mmu, addr + 1, word >> 8));
 
     return GBSTATUS_OK;
 }
 
 static inline gbstatus_e cpu_jump(gb_cpu_t *cpu, uint16_t location)
 {
-    GBCHK(sync_with_cpu(cpu->gb, 4));
+    GBCHK(sync_with_cpu(cpu, 4));
     cpu->pc = location;
 
     return GBSTATUS_OK;
@@ -2180,7 +2196,7 @@ static inline void cpu_instr_dec(gb_cpu_t *cpu, uint8_t *value_ptr)
 
 static inline gbstatus_e cpu_instr_add_hl(gb_cpu_t *cpu, uint16_t value)
 {
-    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+    GBCHK(sync_with_cpu(cpu, 4)); // internal
 
     SET_N(0);
     SET_H(CHECK_CARRY_12((cpu->reg_hl & 0xFFF) + (value & 0xFFF)));
@@ -2239,7 +2255,7 @@ static inline gbstatus_e cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint
 
 static inline gbstatus_e cpu_instr_ret_cond(gb_cpu_t *cpu, bool condition)
 {
-    GBCHK(sync_with_cpu(cpu->gb, 4)); // internal
+    GBCHK(sync_with_cpu(cpu, 4)); // internal
 
     if (condition)
     {

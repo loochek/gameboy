@@ -213,7 +213,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 
                 if (GET_BIT(ppu->reg_stat, STAT_LYC_INT_BIT) && !ppu->lcdc_blocked)
                 {
-                    GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
+                    GBCHK(int_request(&gb->intr_ctrl, INT_LCDC));
                     ppu->lcdc_blocked = true;
                 }
             }
@@ -225,7 +225,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 
             if (GET_BIT(ppu->reg_stat, STAT_OBJ_SEARCH_INT_BIT) && !ppu->lcdc_blocked)
             {
-                int_request(gb->intr_ctrl, INT_LCDC);
+                int_request(&gb->intr_ctrl, INT_LCDC);
                 ppu->lcdc_blocked = true;
             }
 
@@ -250,7 +250,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 
             if (GET_BIT(ppu->reg_stat, STAT_HBLANK_INT_BIT) && !ppu->lcdc_blocked)
             {
-                GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
+                GBCHK(int_request(&gb->intr_ctrl, INT_LCDC));
                 ppu->lcdc_blocked = true;
             }
 
@@ -276,14 +276,14 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 1);
                 SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
 
-                GBCHK(int_request(gb->intr_ctrl, INT_VBLANK));
+                GBCHK(int_request(&gb->intr_ctrl, INT_VBLANK));
                 
                 ppu->new_frame_ready = true;
             }
 
             if (GET_BIT(ppu->reg_stat, STAT_VBLANK_INT_BIT) && !ppu->lcdc_blocked)
             {
-                GBCHK(int_request(gb->intr_ctrl, INT_LCDC));
+                GBCHK(int_request(&gb->intr_ctrl, INT_LCDC));
                 ppu->lcdc_blocked = true;
             }
 
@@ -725,7 +725,7 @@ gbstatus_e ppu_dma_write(gb_ppu_t *ppu, uint8_t value)
         return GBSTATUS_OK;
 
     for (uint8_t i = 0; i < OAM_SIZE; i++)
-        GBCHK(mmu_read(ppu->gb->mmu, (value << 8) | i, &ppu->oam[i]));
+        GBCHK(mmu_read(&ppu->gb->mmu, (value << 8) | i, &ppu->oam[i]));
 
     return GBSTATUS_OK;
 }

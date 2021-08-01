@@ -1,8 +1,7 @@
 #include <SFML/Graphics.h>
 #include <stdio.h>
 #include <string.h>
-#include "gb.h"
-#include "cart.h"
+#include "gb_emu.h"
 
 sfColor gb_screen_colors[] =
 {
@@ -92,61 +91,22 @@ gbstatus_e run(const char *rom_path)
     if (status != GBSTATUS_OK)
         goto cleanup0;
 
-    gb_t        gb     = {0};
-    gb_cpu_t    cpu    = {0};
-    gb_mmu_t    mmu    = {0};
-    gb_timer_t  timer  = {0};
-    gb_ppu_t    ppu    = {0};
-    gb_joypad_t joypad = {0};
-    gb_int_controller_t intr_ctl = {0};
-    
-    gb.cpu       = &cpu;
-    gb.mmu       = &mmu;
-    gb.intr_ctrl = &intr_ctl;
-    gb.timer     = &timer;
-    gb.ppu       = &ppu;
-    gb.joypad    = &joypad;
+    gb_emu_t gb_emu = {0};
 
-    status = cpu_init(gb.cpu, &gb);
+    status = gb_emu_init(&gb_emu);
     if (status != GBSTATUS_OK)
         goto cleanup1;
 
-    status = mmu_init(gb.mmu, &gb);
-    if (status != GBSTATUS_OK)
-        goto cleanup1;
-
-    status = int_init(gb.intr_ctrl, &gb);
+    status = gb_emu_change_rom(&gb_emu, rom_path);
     if (status != GBSTATUS_OK)
         goto cleanup2;
-
-    status = timer_init(gb.timer, &gb);
-    if (status != GBSTATUS_OK)
-        goto cleanup2;
-
-    status = joypad_init(gb.joypad, &gb);
-    if (status != GBSTATUS_OK)
-        goto cleanup2;
-
-    gb_cart_t cart = {0};
-    status = cart_init(&cart, rom_path);
-    if (status != GBSTATUS_OK)
-        goto cleanup2;
-
-    status = mmu_switch_cart(gb.mmu, &cart);
-    if (status != GBSTATUS_OK)
-        goto cleanup3;
-
-    status = ppu_init(gb.ppu, &gb);
-    if (status != GBSTATUS_OK)
-        goto cleanup3;
-
-    sfRenderWindow_setFramerateLimit(frontend.sf_window, 60);
 
     char window_title[GAME_TITLE_LEN + 20];
-    strncpy(window_title, cart.game_title, GAME_TITLE_LEN);
+    strncpy(window_title, gb_emu.game_title, GAME_TITLE_LEN);
     strcat(window_title, " - gb");
-
     sfRenderWindow_setTitle(frontend.sf_window, window_title);
+
+    sfRenderWindow_setFramerateLimit(frontend.sf_window, 60);
 
     while (sfRenderWindow_isOpen(frontend.sf_window))
     {
@@ -183,22 +143,22 @@ gbstatus_e run(const char *rom_path)
         if (sfKeyboard_isKeyPressed(sfKeyRight))
             joypad_state |= BUTTON_RIGHT;
 
-        GBCHK(joypad_update(gb.joypad, joypad_state));
+        GBCHK(gb_emu_update_input(&gb_emu, joypad_state));
 
-        while (!gb.ppu->new_frame_ready)
+        while (!gb_emu.new_frame_ready)
         {
-            status = cpu_step(gb.cpu);
+            status = gb_emu_step(&gb_emu);
             if (status != GBSTATUS_OK)
-                goto cleanup4;
+                goto cleanup2;
         }
 
-        ppu.new_frame_ready = false;
+        gb_emu.new_frame_ready = false;
 
         for (int y = 0; y < GB_SCREEN_HEIGHT; y++)
         {
             for (int x = 0; x < GB_SCREEN_WIDTH; x++)
             {
-                int color = gb.ppu->framebuffer[y * GB_SCREEN_WIDTH + x];
+                int color = gb_emu.framebuffer[y * GB_SCREEN_WIDTH + x];
                 sfImage_setPixel(frontend.sf_image, x, y, gb_screen_colors[color]);
             }
         }
@@ -210,14 +170,8 @@ gbstatus_e run(const char *rom_path)
         sfRenderWindow_display(frontend.sf_window);
     }
 
-cleanup4:
-    GBCHK(ppu_deinit(gb.ppu));
-
-cleanup3:
-    GBCHK(cart_deinit(&cart));
-
 cleanup2:
-    GBCHK(mmu_deinit(gb.mmu));
+    GBCHK(gb_emu_deinit(&gb_emu));
 
 cleanup1:
     deinit_sfml(&frontend);
@@ -232,7 +186,7 @@ int main(int argc, const char *argv[])
 
     if (status != GBSTATUS_OK)
     {
-        GBSTATUS_ERR_PRINT();
+        GBSTATUS_ERR_PRINT("Something went wrong");
         return -1;
     }
 

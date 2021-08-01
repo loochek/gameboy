@@ -130,7 +130,7 @@ gbstatus_e int_step(gb_int_controller_t *ctrl)
 
         if (ctrl->reg_ie & ctrl->reg_if & intr_mask)
         {
-            status = cpu_irq(ctrl->gb->cpu, isr_addr[intr]);
+            status = cpu_irq(&ctrl->gb->cpu, isr_addr[intr]);
             if (status == GBSTATUS_INT_DISABLED)
                 break;
 

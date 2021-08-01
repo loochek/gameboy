@@ -191,7 +191,7 @@ gbstatus_e timer_update(gb_timer_t *timer, int elapsed_cycles)
         if (timer->reg_tima + timer_ticks > 255)
         {
             timer->reg_tima = timer->reg_tma;
-            GBCHK(int_request(timer->gb->intr_ctrl, INT_TIMA));
+            GBCHK(int_request(&timer->gb->intr_ctrl, INT_TIMA));
         }
         else
             timer->reg_tima += timer_ticks;

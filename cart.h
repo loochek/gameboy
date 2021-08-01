@@ -2,7 +2,9 @@
 #define CART_H
 
 #include <stdint.h>
-#include "gb.h"
+#include <stdbool.h>
+#include <stdlib.h>
+#include "gbstatus.h"
 
 struct gb_cart;
 

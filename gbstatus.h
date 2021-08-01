@@ -46,7 +46,10 @@ extern const char *__gbstatus_str_repr[];
  */
 #define GBCHK(expr) { gbstatus_e __status = expr; if (__status != GBSTATUS_OK) return __status; }
 
-#define GBSTATUS_ERR_PRINT() fprintf(stderr, "Something went wrong: [%s] %s\n", \
-                                     __gbstatus_str_repr[status], __gbstatus_str)
+#define GBSTATUS_ERR_PRINT(msg) fprintf(stderr, "[ERROR] %s. Reason: [%s] %s\n", \
+                                     msg, __gbstatus_str_repr[status], __gbstatus_str)
+
+#define GBSTATUS_WARN_PRINT(msg) fprintf(stderr, "[WARNING] %s. Reason: [%s] %s\n", \
+                                         msg, __gbstatus_str_repr[status], __gbstatus_str)
 
 #endif

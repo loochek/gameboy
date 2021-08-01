@@ -1,8 +1,8 @@
 C=clang
-CFLAGS=-O2 -lcsfml-graphics -lcsfml-window -lcsfml-system
+CFLAGS=-fsanitize=address -lcsfml-graphics -lcsfml-window -lcsfml-system
 
 build:
-	$(C) $(CFLAGS) -o gb cpu.c mmu.c ppu.c interrupts.c cart.c mbc_none.c mbc1.c timer.c joypad.c gb.c gbstatus.c main.c
+	$(C) $(CFLAGS) -o gb cpu.c mmu.c ppu.c interrupts.c cart.c mbc_none.c mbc1.c timer.c joypad.c gb_emu.c gbstatus.c main.c
 
 clean:
 	rm -f gb
