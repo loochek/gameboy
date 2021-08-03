@@ -21,9 +21,9 @@ Tested software:
 * Bomb Jack - looks playable
 * Ant Soldiers - looks playable
 * V-Rally - looks playable
-* Road Rash - looks playable
 * Oh! Demo - looks as intended
 
+* Road Rash - screen flickering during gameplay, but playable
 * Kirby's Dream Land 2 - hangs
 * Is That A Demo In Your Pocket? - some visual glitches
 
