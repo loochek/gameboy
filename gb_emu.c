@@ -36,10 +36,7 @@ gbstatus_e gb_emu_init(gb_emu_t *gb_emu)
     if (status != GBSTATUS_OK)
         goto error_handler2;
 
-    gb_emu->cart_inserted   = false;
-    gb_emu->new_frame_ready = false;
-    gb_emu->framebuffer     = gb->ppu.framebuffer;
-    gb_emu->game_title      = NULL;
+    gb_emu->cart_inserted = false;
     return GBSTATUS_OK;
 
 error_handler2:
@@ -50,6 +47,66 @@ error_handler1:
 
 error_handler0:
     return status;
+}
+
+gbstatus_e gb_emu_framebuffer_ptr(gb_emu_t *gb_emu, const char **fb_ptr_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (gb_emu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
+        return status;
+    }
+
+    *fb_ptr_out = gb_emu->gb.ppu.framebuffer;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e gb_emu_frame_ready_ptr(gb_emu_t *gb_emu, const bool **ready_ptr_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (gb_emu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
+        return status;
+    }
+
+    *ready_ptr_out = &gb_emu->gb.ppu.new_frame_ready;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e gb_emu_grab_frame(gb_emu_t *gb_emu)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (gb_emu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
+        return status;
+    }
+
+    gb_emu->gb.ppu.new_frame_ready = false;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e gb_emu_game_title_ptr(gb_emu_t *gb_emu, const char **title_out)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (gb_emu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
+        return status;
+    }
+
+    if (gb_emu->cart_inserted)
+        *title_out = gb_emu->cart.game_title;
+    else
+        *title_out = NULL;
+
+    return GBSTATUS_OK;
 }
 
 gbstatus_e gb_emu_change_rom(gb_emu_t *gb_emu, const char *rom_file_path)
@@ -70,7 +127,26 @@ gbstatus_e gb_emu_change_rom(gb_emu_t *gb_emu, const char *rom_file_path)
     GBCHK(gb_emu_reset(gb_emu));
 
     gb_emu->cart_inserted = true;
-    gb_emu->game_title    = gb_emu->cart.game_title;
+    return GBSTATUS_OK;
+}
+
+gbstatus_e gb_emu_unload_rom(gb_emu_t *gb_emu)
+{
+    gbstatus_e status = GBSTATUS_OK;
+
+    if (gb_emu == NULL)
+    {
+        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
+        return status;
+    }
+
+    if (gb_emu->cart_inserted)
+        GBCHK(cart_deinit(&gb_emu->cart));
+
+    GBCHK(mmu_switch_cart(&gb_emu->gb.mmu, NULL));
+    GBCHK(gb_emu_reset(gb_emu));
+
+    gb_emu->cart_inserted = false;
     return GBSTATUS_OK;
 }
 
@@ -92,6 +168,9 @@ gbstatus_e gb_emu_reset(gb_emu_t *gb_emu)
     GBCHK(int_reset(&gb->intr_ctrl));
     GBCHK(timer_reset(&gb->timer));
     GBCHK(joypad_reset(&gb->joypad));
+
+    // MMU resets inserted cartridge
+
     return GBSTATUS_OK;
 }
 
@@ -105,16 +184,7 @@ gbstatus_e gb_emu_step(gb_emu_t *gb_emu)
         return status;
     }
 
-    gb_t *gb = &gb_emu->gb;
-
-    GBCHK(cpu_step(&gb->cpu));
-
-    if (gb->ppu.new_frame_ready)
-    {
-        gb_emu->new_frame_ready = true;
-        gb->ppu.new_frame_ready = false;
-    }
-    
+    GBCHK(cpu_step(&gb_emu->gb.cpu));
     return GBSTATUS_OK;
 }
 

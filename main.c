@@ -101,8 +101,23 @@ gbstatus_e run(const char *rom_path)
     if (status != GBSTATUS_OK)
         goto cleanup2;
 
+    const char *game_title = NULL;
+    status = gb_emu_game_title_ptr(&gb_emu, &game_title);
+    if (status != GBSTATUS_OK)
+        goto cleanup2;
+
+    const char *framebuffer = NULL;
+    status = gb_emu_framebuffer_ptr(&gb_emu, &framebuffer);
+    if (status != GBSTATUS_OK)
+        goto cleanup2;
+
+    const bool *frame_ready_ptr = NULL;
+    status = gb_emu_frame_ready_ptr(&gb_emu, &frame_ready_ptr);
+    if (status != GBSTATUS_OK)
+        goto cleanup2;
+
     char window_title[GAME_TITLE_LEN + 20];
-    strncpy(window_title, gb_emu.game_title, GAME_TITLE_LEN);
+    strncpy(window_title, game_title, GAME_TITLE_LEN);
     strcat(window_title, " - gb");
     sfRenderWindow_setTitle(frontend.sf_window, window_title);
 
@@ -145,20 +160,20 @@ gbstatus_e run(const char *rom_path)
 
         GBCHK(gb_emu_update_input(&gb_emu, joypad_state));
 
-        while (!gb_emu.new_frame_ready)
+        while (!(*frame_ready_ptr))
         {
             status = gb_emu_step(&gb_emu);
             if (status != GBSTATUS_OK)
                 goto cleanup2;
         }
 
-        gb_emu.new_frame_ready = false;
+        GBCHK(gb_emu_grab_frame(&gb_emu));
 
         for (int y = 0; y < GB_SCREEN_HEIGHT; y++)
         {
             for (int x = 0; x < GB_SCREEN_WIDTH; x++)
             {
-                int color = gb_emu.framebuffer[y * GB_SCREEN_WIDTH + x];
+                int color = framebuffer[y * GB_SCREEN_WIDTH + x];
                 sfImage_setPixel(frontend.sf_image, x, y, gb_screen_colors[color]);
             }
         }
