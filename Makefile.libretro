@@ -1,0 +1,26 @@
+CC = clang
+CFLAGS = -fPIC -O3 -Isrc/core -Isrc/frontends/libretro
+LDFLAGS = -shared -Wl,--version-script=link.T
+
+SOURCES = \
+	src/core/cpu.c \
+	src/core/mmu.c \
+	src/core/ppu.c \
+	src/core/interrupts.c \
+	src/core/cart.c \
+	src/core/mbc_none.c \
+	src/core/mbc1.c \
+	src/core/timer.c \
+	src/core/joypad.c \
+	src/core/gb_emu.c \
+	src/core/gbstatus.c \
+	src/frontends/libretro/libretro_main.c
+
+OBJECTS = $(SOURCES:.c=.o)
+TARGET = gb_libretro.so
+
+$(TARGET) : $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+clean:
+	rm -f $(TARGET) $(OBJECTS)

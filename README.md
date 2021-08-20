@@ -8,6 +8,7 @@ Implemented (at least I think so) features:
 * Timer
 * Input
 * Quite inaccurate, but full PPU implementation: background, window, sprites, OAM DMA
+* Architecture - emulation core with abstract interface and frontends: SFML and libretro
 
 The emulator passes Blargg's cpu_instr, instr_timing, mem_timing tests.
 
@@ -29,8 +30,12 @@ Tested software:
 
 ## Building
 
-Just `make`. Supports both Clang and GCC. Requires CSFML (`sudo apt install libcsfml-dev` in Ubuntu and derivatives)
+Supports both Clang and GCC.
+
+Just `make` for SFML frontend. Requires CSFML (`sudo apt install libcsfml-dev` in Ubuntu and derivatives).
+
+For libretro frontend, run `make -f Makefile.libretro` (and move `gb_libretro.so` and `gb_libretro.info` to `retroarch/cores`).
 
 ##  Gallery
 
-![](screenshots/super_mario_land.png) ![](screenshots/links_awakening.png) ![](screenshots/kirby.png) ![](screenshots/vrally.png) ![](screenshots/ant_soldiers.png) ![](screenshots/oh.png)
+![](screenshots/super_mario_land.png) ![](screenshots/links_awakening.png) ![](screenshots/kirby.png) ![](screenshots/vrally.png) ![](screenshots/ant_soldiers.png) ![](screenshots/oh.png) ![](screenshots/libretro.png)

@@ -1,0 +1,20 @@
+# Software Information
+display_name = "Nintendo - Game Boy (gb)"
+authors = "loochek"
+supported_extensions = "gb"
+corename = "gb"
+license = ""
+permissions = ""
+display_version = "v0.9"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy"
+systemid = "game_boy"
+
+# Libretro Features
+supports_no_game = "true"
+database = "Nintendo - Game Boy"
+
+description = "Some shitty Game Boy emulator created just for fun"
