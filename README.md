@@ -34,7 +34,14 @@ Supports both Clang and GCC.
 
 Just `make` for SFML frontend. Requires CSFML (`sudo apt install libcsfml-dev` in Ubuntu and derivatives).
 
-For libretro frontend, run `make -f Makefile.libretro` (and move `gb_libretro.so` and `gb_libretro.info` to `retroarch/cores`).
+For libretro frontend, run `make -f Makefile.libretro` or `make -f Makefile.libretro-android`. For Android build, you must put correct Android NDK compiler path into the makefile.
+
+## Running
+
+* SFML frontend - as usual standalone application
+* libretro frontend via Retroarch - move `gb_libretro.so` and `gb_libretro.info` to corresponding core and core info directories (`retroarch/cores` in case of Linux)
+
+__Retroarch on Android moment__ - it's not possible to access the core directory as it's located in private app storage. On the other hand, Android security policies forbid dynamic loading of libraries from shared storage. Retroarch has option of manual core installing - but it ignores core info file and allows only BootROM to be run. However, core info directory can be located in shared storage. So, you must (1) install core using "Install or Restore Core" option, (2) put core info file in some folder in shared storage and (3) select this folder as core info directory.
 
 ##  Gallery
 
