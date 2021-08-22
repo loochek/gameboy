@@ -3,12 +3,17 @@
 #include "libretro.h"
 #include "gb_emu.h"
 
+#define MAX_MSG_LEN  100
+#define MSG_DURATION 360
+
+#define GBSTATUS_RETRO_ERR(msg) err_print("%s ([%s] %s)\n", msg, __gbstatus_str_repr[status], __gbstatus_str);
+
 typedef struct
 {
-   char x;
    char r;
    char g;
    char b;
+   char x;
 } fb_color_t;
 
 fb_color_t gb_screen_colors[] =
@@ -18,9 +23,6 @@ fb_color_t gb_screen_colors[] =
    { 0x55, 0x55, 0x55, 0x00 },
    { 0x00, 0x00, 0x00, 0x00 }
 };
-
-#define GBSTATUS_LOG_ERR(msg) log_cb(RETRO_LOG_ERROR, "%s ([%s] %s)\n", \
-                                     msg, __gbstatus_str_repr[status], __gbstatus_str)
 
 /**
  * Libretro relies on global state
@@ -48,6 +50,23 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
    va_start(va, fmt);
    vfprintf(stderr, fmt, va);
    va_end(va);
+}
+
+static void err_print(const char *fmt, ...)
+{
+   char msg[MAX_MSG_LEN + 1] = {0};
+
+   va_list va;
+   va_start(va, fmt);
+   vsnprintf(msg, MAX_MSG_LEN, fmt, va);
+   va_end(va);
+
+   struct retro_message screen_msg = {0};
+   screen_msg.msg = msg;
+   screen_msg.frames = MSG_DURATION;
+
+   log_cb(RETRO_LOG_ERROR, msg);
+   env_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &screen_msg);
 }
 
 unsigned retro_api_version()
@@ -131,21 +150,21 @@ error_handler1:
    gb_emu_deinit(&gb_emu);
 
 error_handler0:
-   GBSTATUS_LOG_ERR("Failed to initialize Gameboy core!");
+   GBSTATUS_RETRO_ERR("Failed to initialize Gameboy core!");
 }
 
 bool retro_load_game(const struct retro_game_info *info)
 {
    if (!core_initialized)
    {
-      log_cb(RETRO_LOG_ERROR, "Gameboy core is not initialized! Try to reload core");
+      err_print("Gameboy core is not initialized! Try to reload core");
       return false;
    }
 
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    if (!env_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      log_cb(RETRO_LOG_ERROR, "XRGB8888 is not supported!");
+      err_print("XRGB8888 is not supported!");
       return false;
    }
 
@@ -172,7 +191,7 @@ bool retro_load_game(const struct retro_game_info *info)
    status = gb_emu_change_rom(&gb_emu, info->path);
    if (status != GBSTATUS_OK)
    {
-      GBSTATUS_LOG_ERR("Failed to load game");
+      GBSTATUS_RETRO_ERR("Failed to load game");
       return false;
    }
       
@@ -232,7 +251,7 @@ void retro_run()
       status = gb_emu_step(&gb_emu);
       if (status != GBSTATUS_OK)
       {
-         GBSTATUS_LOG_ERR("Emulation error!");
+         GBSTATUS_RETRO_ERR("Emulation error!");
          return;
       }
    }
@@ -264,12 +283,6 @@ void retro_reset()
 
 void retro_unload_game()
 {
-   if (!core_initialized)
-   {
-      log_cb(RETRO_LOG_ERROR, "Gameboy core is not initialized! Try to reload core");
-      return;
-   }
-
    gb_emu_unload_rom(&gb_emu);
 }
 

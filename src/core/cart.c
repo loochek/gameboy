@@ -1,5 +1,6 @@
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 #include "cart.h"
 #include "mbc_none.h"
 #include "mbc1.h"
@@ -22,26 +23,26 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
     FILE *rom_file = fopen(rom_path, "rb");
     if (rom_file == NULL)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open ROM file");
+        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open ROM file: %s", strerror(errno));
         goto error_handler0;
     }
 
     if (fseek(rom_file, 0, SEEK_END) != 0)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "fseek fail");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read ROM");
         goto error_handler1;
     }
 
     int rom_file_size = 0;
     if ((rom_file_size = ftell(rom_file)) == -1)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "ftell fail");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read ROM");
         goto error_handler1;
     }
 
     if (fseek(rom_file, 0, SEEK_SET) != 0)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "fseek fail");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read ROM");
         goto error_handler1;
     }
     
@@ -223,39 +224,39 @@ static gbstatus_e cart_load_sram(gb_cart_t *cart)
     FILE *save_file = fopen(save_path, "rb");
     if (save_file == NULL)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open save file");
+        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open save file: %s", strerror(errno));
         goto error_handler0;
     }
 
     if (fseek(save_file, 0, SEEK_END) != 0)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "fseek fail");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read save file");
         goto error_handler1;
     }
 
     int save_file_size = 0;
     if ((save_file_size = ftell(save_file)) == -1)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "ftell fail");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read save file");
         goto error_handler1;
     }
 
     if (fseek(save_file, 0, SEEK_SET) != 0)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "fseek fail");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read save file");
         goto error_handler1;
     }
 
     if (save_file_size != cart->ram_size * SRAM_BANK_SIZE)
     {
-        GBSTATUS(GBSTATUS_CART_FAIL, "SRAM dump size is different from cartridge SRAM size");
+        GBSTATUS(GBSTATUS_CART_FAIL, "save file size is different from cartridge SRAM size");
         goto error_handler1;
     }
 
     int bytes_read = fread(cart->ram, sizeof(uint8_t), save_file_size, save_file);
     if (bytes_read != save_file_size)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read SRAM dump");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to read save file");
         goto error_handler1;
     }
 
@@ -279,20 +280,20 @@ static gbstatus_e cart_save_sram(gb_cart_t *cart)
     FILE *save_file = fopen(save_path, "wb");
     if (save_file == NULL)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open file");
+        GBSTATUS(GBSTATUS_IO_FAIL, "unable to open save file: %s", strerror(errno));
         return status;
     }
 
     int bytes_written = fwrite(cart->ram, sizeof(uint8_t), cart->ram_size * SRAM_BANK_SIZE, save_file);
     if (bytes_written != cart->ram_size * SRAM_BANK_SIZE)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "unable to write SRAM dump");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to write save file");
         return status;
     }
     
     if (fclose(save_file) != 0)
     {
-        GBSTATUS(GBSTATUS_IO_FAIL, "unable to write SRAM dump");
+        GBSTATUS(GBSTATUS_IO_FAIL, "failed to write save file");
         return status;
     }
 
