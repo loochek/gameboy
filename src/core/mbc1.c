@@ -41,10 +41,9 @@ void mbc1_reset(gb_cart_t *cart)
     cart->curr_rom_bank = 1;
 }
 
-void mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
+uint8_t mbc1_read(gb_cart_t *cart, uint16_t addr)
 {
     assert(cart != NULL);
-    assert(byte_out != NULL);
 
     mbc1_state_t *state = (mbc1_state_t*)cart->mbc_state;
 
@@ -55,8 +54,7 @@ void mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
     case 0x2000:
     case 0x3000:
         // ROM bank 0 in mode 0
-        *byte_out = cart->rom[addr];
-        break;
+        return cart->rom[addr];
 
     case 0x4000:
     case 0x5000:
@@ -65,8 +63,7 @@ void mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
     {
         // Switchable ROM bank
         int offset = cart->curr_rom_bank * ROM_BANK_SIZE;
-        *byte_out = cart->rom[offset + addr - 0x4000];
-        break;
+        return cart->rom[offset + addr - 0x4000];
     }
     
     case 0xA000:
@@ -78,13 +75,13 @@ void mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
             if (!state->second_mode)
                 offset = cart->curr_ram_bank * SRAM_BANK_SIZE;
 
-            *byte_out = cart->ram[offset + addr - 0xA000];
+            return cart->ram[offset + addr - 0xA000];
         }
-        break;
+        else
+            return 0xFF;
     
     default:
-        *byte_out = 0xFF;
-        break;
+        return 0xFF;
     }
 }
 

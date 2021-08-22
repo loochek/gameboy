@@ -71,8 +71,8 @@
 #define TILEMAP0_ADDR 0x1800
 #define TILEMAP1_ADDR 0x1C00
 
-#define SET_BIT(var, bit, val) (var = (var) & (~(1 << bit)) | ((val & 0x1) << bit))
-#define GET_BIT(val, bit) ((val >> bit) & 0x1)
+#define SET_BIT(var, bit, val) (var = ((var) & (~(1 << (bit)))) | (((val) & 0x1) << (bit)))
+#define GET_BIT(val, bit) (((val) >> (bit)) & 0x1)
 
 #define GET_TILE_PIXEL(addr, y_offs, x_offs)                               \
 (  ((ppu->vram[(addr) + 2 * (y_offs)    ] >> (7 - (x_offs))) & 0x1) |      \
@@ -311,116 +311,102 @@ void ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
     }
 }
 
-void ppu_lcdc_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_lcdc_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_lcdc;
+    return ppu->reg_lcdc;
 }
 
-void ppu_stat_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_stat_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_stat;
+    return ppu->reg_stat;
 }
 
-void ppu_ly_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_ly_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_ly;
+    return ppu->reg_ly;
 }
 
-void ppu_lyc_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_lyc_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_lyc;
+    return ppu->reg_lyc;
 }
 
-void ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_scx_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_scx;
+    return ppu->reg_scx;
 }
 
-void ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_scy_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_scy;
+    return ppu->reg_scy;
 }
 
-void ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_wx_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_wx;
+    return ppu->reg_wx;
 }
 
-void ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_wy_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_wy;
+    return ppu->reg_wy;
 }
 
-void ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_bgp_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_bgp;
+    return ppu->reg_bgp;
 }
 
-void ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_obp0_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_obp0;
+    return ppu->reg_obp0;
 }
 
-void ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_obp1_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ppu->reg_obp1;
+    return ppu->reg_obp1;
 }
 
-void ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out)
+uint8_t ppu_dma_read(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
-    assert(value_out != NULL);
 
-    *value_out = 0xFF;
+    return 0xFF;
 }
 
-void ppu_vram_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
+uint8_t ppu_vram_read(gb_ppu_t *ppu, uint16_t addr)
 {
     assert(ppu != NULL);
-    assert(byte_out != NULL);
 
-    *byte_out = ppu->vram[addr - 0x8000];
+    return ppu->vram[addr - 0x8000];
 }
 
-void ppu_oam_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
+uint8_t ppu_oam_read(gb_ppu_t *ppu, uint16_t addr)
 {
     assert(ppu != NULL);
-    assert(byte_out != NULL);
 
-    *byte_out = ppu->oam[addr - 0xFE00];
+    return ppu->oam[addr - 0xFE00];
 }
 
 void ppu_lcdc_write(gb_ppu_t *ppu, uint8_t value)
@@ -538,7 +524,7 @@ void ppu_dma_write(gb_ppu_t *ppu, uint8_t value)
         return;
 
     for (uint8_t i = 0; i < OAM_SIZE; i++)
-        mmu_read(&ppu->gb->mmu, (value << 8) | i, &ppu->oam[i]);
+        ppu->oam[i] = mmu_read(&ppu->gb->mmu, (value << 8) | i);
 }
 
 void ppu_vram_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)

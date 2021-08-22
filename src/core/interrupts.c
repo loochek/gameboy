@@ -44,20 +44,18 @@ void int_ie_write(gb_int_controller_t *ctrl, uint8_t value)
     ctrl->reg_ie = value;
 }
 
-void int_if_read(gb_int_controller_t *ctrl, uint8_t *value_out)
+uint8_t int_if_read(gb_int_controller_t *ctrl)
 {
     assert(ctrl != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ctrl->reg_if;
+    return ctrl->reg_if;
 }
 
-void int_ie_read(gb_int_controller_t *ctrl, uint8_t *value_out)
+uint8_t int_ie_read(gb_int_controller_t *ctrl)
 {
     assert(ctrl != NULL);
-    assert(value_out != NULL);
 
-    *value_out = ctrl->reg_ie;
+    return ctrl->reg_ie;
 }
 
 void int_request(gb_int_controller_t *ctrl, interrupt_e intr)
@@ -77,8 +75,7 @@ void int_step(gb_int_controller_t *ctrl)
 
         if (ctrl->reg_ie & ctrl->reg_if & intr_mask)
         {
-            gbstatus_e irq_status = cpu_irq(&ctrl->gb->cpu, isr_addr[intr]);
-            if (irq_status == GBSTATUS_INT_DISABLED)
+            if (!cpu_irq(&ctrl->gb->cpu, isr_addr[intr]))
                 break;
 
             ctrl->reg_if &= ~intr_mask;

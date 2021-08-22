@@ -5,6 +5,7 @@
 gbstatus_e mbc_none_init(gb_cart_t *cart)
 {
     assert(cart != NULL);
+    
     return GBSTATUS_OK;
 }
 
@@ -13,10 +14,9 @@ void mbc_none_reset(gb_cart_t *cart)
     assert(cart != NULL);
 }
 
-void mbc_none_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
+uint8_t mbc_none_read(gb_cart_t *cart, uint16_t addr)
 {
     assert(cart != NULL);
-    assert(byte_out != NULL);
 
     switch (addr & 0xF000)
     {
@@ -29,18 +29,15 @@ void mbc_none_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
     case 0x6000:
     case 0x7000:
         // ROM
-        *byte_out = cart->rom[addr];
-        break;
+        return cart->rom[addr];
 
     case 0xA000:
     case 0xB000:
         // External RAM
-        *byte_out = cart->ram[addr - 0xA000];
-        break;
+        return cart->ram[addr - 0xA000];
     
     default:
-        *byte_out = 0xFF;
-        break;
+        return 0xFF;
     }
 }
 

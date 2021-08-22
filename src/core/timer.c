@@ -64,36 +64,32 @@ void timer_tac_write(gb_timer_t *timer, uint8_t value)
     timer->reg_tac = value;
 }
 
-void timer_div_read(gb_timer_t *timer, uint8_t *value_out)
+uint8_t timer_div_read(gb_timer_t *timer)
 {
     assert(timer != NULL);
-    assert(value_out != NULL);
 
-    *value_out = timer->reg_div;
+    return timer->reg_div;
 }
 
-void timer_tima_read(gb_timer_t *timer, uint8_t *value_out)
+uint8_t timer_tima_read(gb_timer_t *timer)
 {
     assert(timer != NULL);
-    assert(value_out != NULL);
 
-    *value_out = timer->reg_tima;
+    return timer->reg_tima;
 }
 
-void timer_tma_read(gb_timer_t *timer, uint8_t *value_out)
+uint8_t timer_tma_read(gb_timer_t *timer)
 {
     assert(timer != NULL);
-    assert(value_out != NULL);
 
-    *value_out = timer->reg_tma;
+    return timer->reg_tma;
 }
 
-void timer_tac_read(gb_timer_t *timer, uint8_t *value_out)
+uint8_t timer_tac_read(gb_timer_t *timer)
 {
     assert(timer != NULL);
-    assert(value_out != NULL);
-
-    *value_out = timer->reg_tac;
+    
+    return timer->reg_tac;
 }
 
 void timer_update(gb_timer_t *timer, int elapsed_cycles)

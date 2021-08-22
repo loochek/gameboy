@@ -29,9 +29,9 @@ void mbc_none_reset(struct gb_cart *cart);
  * 
  * \param cart Cartridge instance
  * \param addr Address to read
- * \param byte_out Where to store read byte
+ * \return Byte read
  */
-void mbc_none_read(struct gb_cart *cart, uint16_t addr, uint8_t *byte_out);
+uint8_t mbc_none_read(struct gb_cart *cart, uint16_t addr);
 
 /**
  * Implements memory writing requests to the cartridge without mapper

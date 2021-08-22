@@ -24,12 +24,11 @@ void joypad_reset(gb_joypad_t *joypad)
     joypad->reg_joyp = 0xCF;
 }
 
-void joypad_joyp_read(gb_joypad_t *joypad, uint8_t *value_out)
+uint8_t joypad_joyp_read(gb_joypad_t *joypad)
 {
     assert(joypad != NULL);
-    assert(value_out != NULL);
 
-    *value_out = joypad->reg_joyp;
+    return joypad->reg_joyp;
 }
 
 void joypad_joyp_write(gb_joypad_t *joypad, uint8_t value)

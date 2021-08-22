@@ -99,8 +99,9 @@ void cpu_reset(gb_cpu_t *cpu);
  * 
  * \param cpu CPU instance
  * \param int_vec Interrupt vector
+ * \return False if interrupts are disabled, true otherwise
  */
-gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec);
+bool cpu_irq(gb_cpu_t *cpu, uint16_t int_vec);
 
 /**
  * Dumps CPU state to the standart output

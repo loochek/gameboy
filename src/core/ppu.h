@@ -113,115 +113,115 @@ void ppu_update(gb_ppu_t *ppu, int elapsed_cycles);
  * Emulates LCDC register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_lcdc_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_lcdc_read(gb_ppu_t *ppu);
 
 /**
  * Emulates STAT register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_stat_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_stat_read(gb_ppu_t *ppu);
 
 /**
  * Emulates LY register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_ly_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_ly_read(gb_ppu_t *ppu);
 
 /**
  * Emulates LYC register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_lyc_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_lyc_read(gb_ppu_t *ppu);
 
 /**
  * Emulates SCX register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_scx_read(gb_ppu_t *ppu);
 
 /**
  * Emulates SCY register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_scy_read(gb_ppu_t *ppu);
 
 /**
  * Emulates WX register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_wx_read(gb_ppu_t *ppu);
 
 /**
  * Emulates WY register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_wy_read(gb_ppu_t *ppu);
 
 /**
  * Emulates BGP register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_bgp_read(gb_ppu_t *ppu);
 
 /**
  * Emulates OBP0 register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_obp0_read(gb_ppu_t *ppu);
 
 /**
  * Emulates OBP1 register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_obp1_read(gb_ppu_t *ppu);
 
 /**
  * Emulates DMA register reading
  * 
  * \param ppu PPU instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out);
+uint8_t ppu_dma_read(gb_ppu_t *ppu);
 
 /**
  * Emulates a memory read request to the VRAM
  * 
  * \param ppu PPU instance
  * \param addr Address to read
- * \param byte_out Where to store read byte
+ * \return Byte read
  */
-void ppu_vram_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out);
+uint8_t ppu_vram_read(gb_ppu_t *ppu, uint16_t addr);
 
 /**
  * Emulates a memory read request to the OAM
  * 
  * \param ppu PPU instance
  * \param addr Address to read
- * \param byte_out Where to store read byte
+ * \return Byte read
  */
-void ppu_oam_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out);
+uint8_t ppu_oam_read(gb_ppu_t *ppu, uint16_t addr);
 
 /**
  * Emulates writing to the LCDC register

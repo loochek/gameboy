@@ -48,9 +48,9 @@ void joypad_reset(gb_joypad_t *joypad);
  * Emulates JOYP register reading
  * 
  * \param joypad Joypad instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void joypad_joyp_read(gb_joypad_t *joypad, uint8_t *value_out);
+uint8_t joypad_joyp_read(gb_joypad_t *joypad);
 
 /**
  * Emulates writing to the JOYP register

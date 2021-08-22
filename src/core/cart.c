@@ -175,16 +175,22 @@ error_handler0:
 
 void cart_reset(gb_cart_t *cart)
 {
+    assert(cart != NULL);
+
     cart->mbc_reset_func(cart);
 }
 
-void cart_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
+uint8_t cart_read(gb_cart_t *cart, uint16_t addr)
 {
-    cart->mbc_read_func(cart, addr, byte_out);
+    assert(cart != NULL);
+
+    return cart->mbc_read_func(cart, addr);
 }
 
 void cart_write(gb_cart_t *cart, uint16_t addr, uint8_t byte)
 {
+    assert(cart != NULL);
+
     cart->mbc_write_func(cart, addr, byte);
 }
 

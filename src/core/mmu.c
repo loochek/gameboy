@@ -74,10 +74,9 @@ void mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart)
     mmu_reset(mmu);
 }
 
-void mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
+uint8_t mmu_read(gb_mmu_t *mmu, uint16_t addr)
 {
     assert(mmu != NULL);
-    assert(byte_out != NULL);
 
     gb_t *gb = mmu->gb;
 
@@ -94,36 +93,29 @@ void mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
     case 0xA000:
     case 0xB000:
         if (addr < 0x100 && mmu->bootrom_mapped)
-        {
-            *byte_out = gb_bootrom[addr];
-        }
+            return gb_bootrom[addr];
         else
         {
             // ROM and external RAM requests are redirected to the cartridge
             if (mmu->cart == NULL)
-                *byte_out = 0xFF;
+                return 0xFF;
             else
-                cart_read(mmu->cart, addr, byte_out);
+                return cart_read(mmu->cart, addr);
         }
-
-        break;
 
     case 0x8000:
     case 0x9000:
         // VRAM
-        ppu_vram_read(&gb->ppu, addr, byte_out);
-        break;
+        return ppu_vram_read(&gb->ppu, addr);
 
     case 0xC000:
     case 0xD000:
         // Internal RAM
-        *byte_out = mmu->ram[addr - 0xC000];
-        break;
+        return mmu->ram[addr - 0xC000];
     
     case 0xE000:
         // unused
-        *byte_out = 0xFF;
-        break;
+        return 0xFF;
 
     case 0xF000:
         switch (addr & 0xF00)
@@ -143,130 +135,109 @@ void mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
         case 0xC00:
         case 0xD00:
             // unused
-            *byte_out = 0xFF;
-            break;
+            return 0xFF;
         
         case 0xE00:
             if (addr >= 0xFEA0)
+            {
                 // unused
-                *byte_out = 0xFF;
-                break;
+                return 0xFF;
+            }
             
             // OAM
-            ppu_oam_read(&gb->ppu, addr, byte_out);
-            break;
+            return ppu_oam_read(&gb->ppu, addr);
 
         case 0xF00:
             switch (addr & 0xFF)
             {
             case 0x0F:
                 // IF (interrupt controller)
-                int_if_read(&gb->intr_ctrl, byte_out);
-                break;
+                return int_if_read(&gb->intr_ctrl);
 
             case 0xFF:
                 // IE (interrupt controller)
-                int_ie_read(&gb->intr_ctrl, byte_out);
-                break;
+                return int_ie_read(&gb->intr_ctrl);
 
             case 0x00:
                 // JOYP (Joypad)
-                joypad_joyp_read(&gb->joypad, byte_out);
-                break;
+                return joypad_joyp_read(&gb->joypad);
 
             case 0x04:
                 // DIV (timer)
-                timer_div_read(&gb->timer, byte_out);
-                break;
+                return timer_div_read(&gb->timer);
 
             case 0x05:
                 // TIMA (timer)
-                timer_tima_read(&gb->timer, byte_out);
-                break;
+                return timer_tima_read(&gb->timer);
 
             case 0x06:
                 // TMA (timer)
-                timer_tma_read(&gb->timer, byte_out);
-                break;
+                return timer_tma_read(&gb->timer);
 
             case 0x07:
                 // TAC (timer)
-                timer_tac_read(&gb->timer, byte_out);
-                break;
+                return timer_tac_read(&gb->timer);
 
             case 0x40:
                 // LCDC (PPU)
-                ppu_lcdc_read(&gb->ppu, byte_out);
-                break;
+                return ppu_lcdc_read(&gb->ppu);
 
             case 0x41:
                 // STAT (PPU)
-                ppu_stat_read(&gb->ppu, byte_out);
-                break;
+                return ppu_stat_read(&gb->ppu);
 
             case 0x42:
                 // SCY (PPU)
-                ppu_scy_read(&gb->ppu, byte_out);
-                break;
-
+                return ppu_scy_read(&gb->ppu);
             case 0x43:
                 // SCX (PPU)
-                ppu_scx_read(&gb->ppu, byte_out);
-                break;
+                return ppu_scx_read(&gb->ppu);
 
             case 0x44:
                 // LY (PPU)
-                ppu_ly_read(&gb->ppu, byte_out);
-                break;
+                return ppu_ly_read(&gb->ppu);
 
             case 0x45:
                 // LYC (PPU)
-                ppu_lyc_read(&gb->ppu, byte_out);
-                break;
+                return ppu_lyc_read(&gb->ppu);
 
             case 0x47:
                 // BGP (PPU)
-                ppu_bgp_read(&gb->ppu, byte_out);
-                break;
+                return ppu_bgp_read(&gb->ppu);
 
             case 0x48:
                 // OBP0 (PPU)
-                ppu_obp0_read(&gb->ppu, byte_out);
-                break;
+                return ppu_obp0_read(&gb->ppu);
 
             case 0x49:
                 // OBP1 (PPU)
-                ppu_obp1_read(&gb->ppu, byte_out);
-                break;
+                return ppu_obp1_read(&gb->ppu);
 
             case 0x4A:
                 // WY (PPU)
-                ppu_wy_read(&gb->ppu, byte_out);
-                break;
+                return ppu_wy_read(&gb->ppu);
 
             case 0x4B:
                 // WX (PPU)
-                ppu_wx_read(&gb->ppu, byte_out);
-                break;
+                return ppu_wx_read(&gb->ppu);
 
             case 0x46:
                 // DMA (PPU)
-                ppu_dma_read(&gb->ppu, byte_out);
-                break;
+                return ppu_dma_read(&gb->ppu);
 
             default:
                 if (addr >= 0xFF80 && addr < 0xFFFF)
-                    *byte_out = mmu->hram[addr - 0xFF80];
+                    return mmu->hram[addr - 0xFF80];
                 else
-                    *byte_out = 0xFF;
-                
-                break;
+                    return 0xFF;
             }
 
-            break;
+        default:
+            return 0xFF;
         }
-
-        break;
+    
+    default:
+        return 0xFF;
     }
 }
 

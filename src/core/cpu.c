@@ -33,7 +33,7 @@
 /// Gets 4th bit of the flags register
 #define GET_C() ((cpu->reg_f >> 4) & 0x1)
 
-#define ZERO_CHECK(val) ((val & 0xFF) == 0)
+#define ZERO_CHECK(val) (((val) & 0xFF) == 0)
 
 #define CHECK_CARRY_4(val)  (((val) >> 4)  != 0)
 #define CHECK_CARRY_8(val)  (((val) >> 8)  != 0)
@@ -42,13 +42,13 @@
 
 // Helper functions and common implementations of some instructions
 
-static inline void cpu_jump           (gb_cpu_t *cpu, uint16_t location);
-static inline void cpu_instr_add_hl   (gb_cpu_t *cpu, uint16_t value);
-static inline void cpu_instr_jp_cond  (gb_cpu_t *cpu, bool condition, uint16_t *loc_out);
-static inline void cpu_instr_jr_cond  (gb_cpu_t *cpu, bool condition, int8_t   *disp_out);
-static inline void cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out);
-static inline void cpu_instr_ret_cond (gb_cpu_t *cpu, bool condition);
-static inline void cpu_instr_rst      (gb_cpu_t *cpu, uint16_t vector);
+static inline void     cpu_jump           (gb_cpu_t *cpu, uint16_t location);
+static inline void     cpu_instr_add_hl   (gb_cpu_t *cpu, uint16_t value);
+static inline void     cpu_instr_rst      (gb_cpu_t *cpu, uint16_t vector);
+static inline void     cpu_instr_ret_cond (gb_cpu_t *cpu, bool condition);
+static inline uint16_t cpu_instr_jp_cond  (gb_cpu_t *cpu, bool condition);
+static inline uint16_t cpu_instr_call_cond(gb_cpu_t *cpu, bool condition);
+static inline int8_t   cpu_instr_jr_cond  (gb_cpu_t *cpu, bool condition);
 
 static inline void cpu_instr_add (gb_cpu_t *cpu, uint8_t value);
 static inline void cpu_instr_adc (gb_cpu_t *cpu, uint8_t value);
@@ -83,18 +83,18 @@ static void sync_with_cpu(gb_cpu_t *cpu, int elapsed_cycles);
  * 
  * \param cpu CPU instance
  * \param addr Address to read
- * \param byte_out Where to store read byte
+ * \return Byte read
  */
-static void cpu_mem_read(gb_cpu_t *cpu, uint16_t addr, uint8_t *byte_out);
+static uint8_t cpu_mem_read(gb_cpu_t *cpu, uint16_t addr);
 
 /**
  * Emulates a memory read request from the CPU with correct timing
  * 
  * \param cpu CPU instance
  * \param addr Address to read
- * \param byte_out Where to store read word
+ * \return Word read
  */
-static void cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr, uint16_t *word_out);
+static uint16_t cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr);
 
 /**
  * Emulates a memory write request from the CPU with correct timing
@@ -147,7 +147,7 @@ void cpu_reset(gb_cpu_t *cpu)
     cpu->ei_delay = 0;
 }
 
-gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
+bool cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
 {
     assert(cpu != NULL);
 
@@ -161,7 +161,7 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
     }
 
     if (!cpu->ime)
-        return GBSTATUS_INT_DISABLED;
+        return false;
 
     cpu->ime = false;
 
@@ -173,7 +173,7 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
     sync_with_cpu(cpu, 4);
     cpu->pc = int_vec;
 
-    return GBSTATUS_OK;
+    return true;
 }
 
 void cpu_dump(gb_cpu_t *cpu)
@@ -202,8 +202,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
             cpu->ime = true;
     }
 
-    uint8_t opcode = 0x00;
-    cpu_mem_read(cpu, cpu->pc, &opcode);
+    uint8_t opcode = cpu_mem_read(cpu, cpu->pc);
     cpu->pc++;
 
     uint8_t  imm_val8  = 0;
@@ -558,43 +557,42 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // ld r8, (hl)
 #pragma region
     case 0x46:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_b);
+        cpu->reg_b = cpu_mem_read(cpu, cpu->reg_hl);
 
         DISASM("ld b, (hl)");
         break;
 
     case 0x4E:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_c);
+        cpu->reg_c = cpu_mem_read(cpu, cpu->reg_hl);
 
         DISASM("ld c, (hl)");
         break;
 
     case 0x56:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_d);
+        cpu->reg_d = cpu_mem_read(cpu, cpu->reg_hl);
 
         DISASM("ld d, (hl)");
         break;
 
     case 0x5E:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_e);
-
+        cpu->reg_e = cpu_mem_read(cpu, cpu->reg_hl);
         DISASM("ld e, (hl)");
         break;
 
     case 0x66:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_h);
+        cpu->reg_h = cpu_mem_read(cpu, cpu->reg_hl);
 
         DISASM("ld h, (hl)");
         break;
 
     case 0x6E:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_l);
+        cpu->reg_l = cpu_mem_read(cpu, cpu->reg_hl);
 
         DISASM("ld l, (hl)");
         break;
 
     case 0x7E:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, cpu->reg_hl);
 
         DISASM("ld a, (hl)");
         break;
@@ -604,7 +602,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // ld r8, imm8
 #pragma region
     case 0x06:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
         cpu->reg_b = imm_val8;
 
@@ -612,7 +610,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x0E:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
         cpu->reg_c = imm_val8;
 
@@ -620,7 +618,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x16:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
         cpu->reg_d = imm_val8;
 
@@ -628,7 +626,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x1E:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
         cpu->reg_e = imm_val8;
 
@@ -636,7 +634,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x26:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
         cpu->reg_h = imm_val8;
 
@@ -644,7 +642,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x2E:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
         cpu->reg_l = imm_val8;
 
@@ -652,7 +650,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x3E:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
         cpu->reg_a = imm_val8;
 
@@ -689,33 +687,33 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x0A:
-        cpu_mem_read(cpu, cpu->reg_bc, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, cpu->reg_bc);
 
         DISASM("ld a, (bc)");
         break;
 
     case 0x1A:
-        cpu_mem_read(cpu, cpu->reg_de, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, cpu->reg_de);
 
         DISASM("ld a, (de)");
         break;
 
     case 0x2A:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, cpu->reg_hl);
         cpu->reg_hl++;
 
         DISASM("ld a, (hl++)");
         break;
 
     case 0x3A:
-        cpu_mem_read(cpu, cpu->reg_hl, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, cpu->reg_hl);
         cpu->reg_hl--;
 
         DISASM("ld a, (hl--)");
         break;
 
     case 0x36:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
@@ -724,7 +722,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xE0:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_mem_write(cpu, 0xFF00 + imm_val8, cpu->reg_a);
@@ -733,10 +731,10 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xF0:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
-        cpu_mem_read(cpu, 0xFF00 + imm_val8, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, 0xFF00 + imm_val8);
 
         DISASM("ld a, (0xFF00 + 0x%02x)", imm_val8);
         break;
@@ -748,13 +746,13 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xF2:
-        cpu_mem_read(cpu, 0xFF00 + cpu->reg_c, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, 0xFF00 + cpu->reg_c);
 
         DISASM("ld a, (0xFF00 + c)");
         break;
 
     case 0xEA:
-        cpu_mem_read_word(cpu, cpu->pc, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->pc);
         cpu->pc += 2;
 
         cpu_mem_write(cpu, imm_val16, cpu->reg_a);
@@ -763,10 +761,10 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xFA:
-        cpu_mem_read_word(cpu, cpu->pc, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->pc);
         cpu->pc += 2;
 
-        cpu_mem_read(cpu, imm_val16, &cpu->reg_a);
+        cpu->reg_a = cpu_mem_read(cpu, imm_val16);
 
         DISASM("ld a, (0x%04x)", imm_val16);
         break;
@@ -778,7 +776,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // ld r16, imm16
 #pragma region
     case 0x01:
-        cpu_mem_read_word(cpu, cpu->pc, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->pc);
         cpu->pc += 2;
 
         cpu->reg_bc = imm_val16;
@@ -787,7 +785,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x11:
-        cpu_mem_read_word(cpu, cpu->pc, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->pc);
         cpu->pc += 2;
 
         cpu->reg_de = imm_val16;
@@ -796,7 +794,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x21:
-        cpu_mem_read_word(cpu, cpu->pc, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->pc);
         cpu->pc += 2;
 
         cpu->reg_hl = imm_val16;
@@ -805,7 +803,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x31:
-        cpu_mem_read_word(cpu, cpu->pc, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->pc);
         cpu->pc += 2;
 
         cpu->sp = imm_val16;
@@ -817,7 +815,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // pop r16
 #pragma region
     case 0xC1:
-        cpu_mem_read_word(cpu, cpu->sp, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->sp);
         cpu->sp += 2;
 
         cpu->reg_bc = imm_val16;
@@ -826,7 +824,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xD1:
-        cpu_mem_read_word(cpu, cpu->sp, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->sp);
         cpu->sp += 2;
 
         cpu->reg_de = imm_val16;
@@ -835,7 +833,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xE1:
-        cpu_mem_read_word(cpu, cpu->sp, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->sp);
         cpu->sp += 2;
 
         cpu->reg_hl = imm_val16;
@@ -844,7 +842,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xF1:
-        cpu_mem_read_word(cpu, cpu->sp, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->sp);
         cpu->sp += 2;
 
         cpu->reg_af = imm_val16;
@@ -896,7 +894,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // etc 16-bit loads
 #pragma region
     case 0x08:
-        cpu_mem_read_word(cpu, cpu->pc, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->pc);
         cpu->pc += 2;
 
         cpu_mem_write_word(cpu, imm_val16, cpu->sp);
@@ -1367,56 +1365,56 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // OP a, (hl)
 #pragma region
     case 0x86:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_add(cpu, imm_val8);
 
         DISASM("add a, (hl)");
         break;
 
     case 0x96:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_sub(cpu, imm_val8);
 
         DISASM("sub a, (hl)");
         break;
 
     case 0xA6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_and(cpu, imm_val8);
 
         DISASM("and a, (hl)");
         break;
 
     case 0xB6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_or(cpu, imm_val8);
 
         DISASM("or a, (hl)");
         break;
 
     case 0x8E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_adc(cpu, imm_val8);
 
         DISASM("adc a, (hl)");
         break;
 
     case 0x9E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_sbc(cpu, imm_val8);
 
         DISASM("sbc a, (hl)");
         break;
 
     case 0xAE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_xor(cpu, imm_val8);
 
         DISASM("xor a, (hl)");
         break;
 
     case 0xBE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_cp(cpu, imm_val8);
 
         DISASM("cp a, (hl)");
@@ -1426,7 +1424,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // OP a, imm8
 #pragma region
     case 0xC6:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_add(cpu, imm_val8);
@@ -1435,7 +1433,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xD6:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_sub(cpu, imm_val8);
@@ -1444,7 +1442,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xE6:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_and(cpu, imm_val8);
@@ -1453,7 +1451,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xF6:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_or(cpu, imm_val8);
@@ -1462,7 +1460,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xCE:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_adc(cpu, imm_val8);
@@ -1471,7 +1469,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xDE:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_sbc(cpu, imm_val8);
@@ -1480,7 +1478,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xEE:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_xor(cpu, imm_val8);
@@ -1489,7 +1487,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xFE:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         cpu_instr_cp(cpu, imm_val8);
@@ -1501,7 +1499,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // misc 8-bit arithmetic
 #pragma region
     case 0x34:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_inc(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -1509,7 +1507,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0x35:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_dec(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
         
@@ -1668,7 +1666,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // misc 16-bit arithmetics
 #pragma region
     case 0xE8:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         SET_Z(0);
@@ -1684,7 +1682,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xF8:
-        cpu_mem_read(cpu, cpu->pc, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->pc);
         cpu->pc++;
 
         SET_Z(0);
@@ -1706,31 +1704,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // absolute jumps
 #pragma region
     case 0xC2:
-        cpu_instr_jp_cond(cpu, 1 - GET_Z(), &imm_val16);
+        imm_val16 = cpu_instr_jp_cond(cpu, 1 - GET_Z());
 
         DISASM("jp nz, 0x%04x", imm_val16);
         break;
 
     case 0xD2:
-        cpu_instr_jp_cond(cpu, 1 - GET_C(), &imm_val16);
+        imm_val16 = cpu_instr_jp_cond(cpu, 1 - GET_C());
 
         DISASM("jp nc, 0x%04x", imm_val16);
         break;
 
     case 0xCA:
-        cpu_instr_jp_cond(cpu, GET_Z(), &imm_val16);
+        imm_val16 = cpu_instr_jp_cond(cpu, GET_Z());
 
         DISASM("jp z, 0x%04x", imm_val16);
         break;
 
     case 0xDA:
-        cpu_instr_jp_cond(cpu, GET_C(), &imm_val16);
+        imm_val16 = cpu_instr_jp_cond(cpu, GET_C());
 
         DISASM("jp c, 0x%04x", imm_val16);
         break;
 
     case 0xC3:
-        cpu_instr_jp_cond(cpu, true, &imm_val16);
+        imm_val16 = cpu_instr_jp_cond(cpu, true);
 
         DISASM("jp 0x%04x", imm_val16);
         break;
@@ -1745,31 +1743,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // relative jumps
 #pragma region
     case 0x20:
-        cpu_instr_jr_cond(cpu, 1 - GET_Z(), (int8_t*)&imm_val8);
+        imm_val8 = cpu_instr_jr_cond(cpu, 1 - GET_Z());
 
         DISASM("jr nz, %d", imm_val8);
         break;
 
     case 0x30:
-        cpu_instr_jr_cond(cpu, 1 - GET_C(), (int8_t*)&imm_val8);
+        imm_val8 = cpu_instr_jr_cond(cpu, 1 - GET_C());
 
         DISASM("jr nc, %d", imm_val8);
         break;
 
     case 0x28:
-        cpu_instr_jr_cond(cpu, GET_Z(), (int8_t*)&imm_val8);
+        imm_val8 = cpu_instr_jr_cond(cpu, GET_Z());
 
         DISASM("jr z, %d", imm_val8);
         break;
 
     case 0x38:
-        cpu_instr_jr_cond(cpu, GET_C(), (int8_t*)&imm_val8);
+        imm_val8 = cpu_instr_jr_cond(cpu, GET_C());
 
         DISASM("jr c, %d", imm_val8);
         break;
 
     case 0x18:
-        cpu_instr_jr_cond(cpu, true, (int8_t*)&imm_val8);
+        imm_val8 = cpu_instr_jr_cond(cpu, true);
 
         DISASM("jr %d", imm_val8);
         break;
@@ -1778,31 +1776,31 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
     // calls
 #pragma region
     case 0xC4:
-        cpu_instr_call_cond(cpu, 1 - GET_Z(), &imm_val16);
+        imm_val16 = cpu_instr_call_cond(cpu, 1 - GET_Z());
 
         DISASM("call nz, 0x%04x", imm_val16);
         break;
 
     case 0xD4:
-        cpu_instr_call_cond(cpu, 1 - GET_C(), &imm_val16);
+        imm_val16 = cpu_instr_call_cond(cpu, 1 - GET_C());
 
         DISASM("call nc, 0x%04x", imm_val16);
         break;
 
     case 0xCC:
-        cpu_instr_call_cond(cpu, GET_Z(), &imm_val16);
+        imm_val16 = cpu_instr_call_cond(cpu, GET_Z());
 
         DISASM("call z, 0x%04x", imm_val16);
         break;
 
     case 0xDC:
-        cpu_instr_call_cond(cpu, GET_C(), &imm_val16);
+        imm_val16 = cpu_instr_call_cond(cpu, GET_C());
 
         DISASM("call c, 0x%04x", imm_val16);
         break;
 
     case 0xCD:
-        cpu_instr_call_cond(cpu, true, &imm_val16);
+        imm_val16 = cpu_instr_call_cond(cpu, true);
 
         DISASM("call 0x%04x", imm_val16);
         break;
@@ -1835,7 +1833,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xC9:
-        cpu_mem_read_word(cpu, cpu->sp, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->sp);
         cpu->sp += 2;
 
         cpu_jump(cpu, imm_val16);
@@ -1844,7 +1842,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         break;
 
     case 0xD9:
-        cpu_mem_read_word(cpu, cpu->sp, &imm_val16);
+        imm_val16 = cpu_mem_read_word(cpu, cpu->sp);
         cpu->sp += 2;
 
         cpu_jump(cpu, imm_val16);
@@ -1987,8 +1985,6 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
         GBSTATUS(GBSTATUS_CPU_ILLEGAL_OP, "illegal opcode: 0x%02x", opcode);
         return status;
 
-        break;
-
 #pragma endregion
     }
 
@@ -2005,25 +2001,25 @@ static void sync_with_cpu(gb_cpu_t *cpu, int elapsed_cycles)
     ppu_update(&gb->ppu, elapsed_cycles);
 }
 
-static void cpu_mem_read(gb_cpu_t *cpu, uint16_t addr, uint8_t *byte_out)
+static uint8_t cpu_mem_read(gb_cpu_t *cpu, uint16_t addr)
 {
     // Memory access takes some time
     sync_with_cpu(cpu, MEM_ACCESS_DURATION);
-    mmu_read(&cpu->gb->mmu, addr, byte_out);
+    return mmu_read(&cpu->gb->mmu, addr);
 }
 
-static void cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr, uint16_t *word_out)
+static uint16_t cpu_mem_read_word(gb_cpu_t *cpu, uint16_t addr)
 {
-    uint8_t byte = 0;
+    uint16_t word = 0;
 
     // Memory access takes some time
     sync_with_cpu(cpu, MEM_ACCESS_DURATION);
-    mmu_read(&cpu->gb->mmu, addr, &byte);
-    *word_out |= byte;
+    word = mmu_read(&cpu->gb->mmu, addr);
 
     sync_with_cpu(cpu, MEM_ACCESS_DURATION);
-    mmu_read(&cpu->gb->mmu, addr + 1, &byte);
-    *word_out |= (byte << 8);
+    word |= mmu_read(&cpu->gb->mmu, addr + 1) << 8;
+
+    return word;
 }
 
 static void cpu_mem_write(gb_cpu_t *cpu, uint16_t addr, uint8_t byte)
@@ -2161,37 +2157,32 @@ static inline void cpu_instr_add_hl(gb_cpu_t *cpu, uint16_t value)
     cpu->reg_hl += value;
 }
 
-static inline void cpu_instr_jp_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
+static inline uint16_t cpu_instr_jp_cond(gb_cpu_t *cpu, bool condition)
 {
-    uint16_t new_pc = 0;
-    cpu_mem_read_word(cpu, cpu->pc, &new_pc);
+    uint16_t new_pc = cpu_mem_read_word(cpu, cpu->pc);
     cpu->pc += 2;
-
-    *loc_out = new_pc;
 
     if (condition)
         cpu_jump(cpu, new_pc);
+
+    return new_pc;
 }
 
-static inline void cpu_instr_jr_cond(gb_cpu_t *cpu, bool condition, int8_t *disp_out)
+static inline int8_t cpu_instr_jr_cond(gb_cpu_t *cpu, bool condition)
 {
-    int8_t disp = 0;
-    cpu_mem_read(cpu, cpu->pc, (uint8_t*)&disp);
+    int8_t disp = (int8_t)cpu_mem_read(cpu, cpu->pc);
     cpu->pc++;
-
-    *disp_out = disp;
 
     if (condition)
         cpu_jump(cpu, cpu->pc + disp);
+
+    return disp;
 }
 
-static inline void cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint16_t *loc_out)
+static inline uint16_t cpu_instr_call_cond(gb_cpu_t *cpu, bool condition)
 {
-    uint16_t new_pc = 0;
-    cpu_mem_read_word(cpu, cpu->pc, &new_pc);
+    uint16_t new_pc = cpu_mem_read_word(cpu, cpu->pc);
     cpu->pc += 2;
-
-    *loc_out = new_pc;
 
     if (condition)
     {
@@ -2199,6 +2190,8 @@ static inline void cpu_instr_call_cond(gb_cpu_t *cpu, bool condition, uint16_t *
         cpu_mem_write_word(cpu, cpu->sp, cpu->pc);
         cpu_jump(cpu, new_pc);
     }
+
+    return new_pc;
 }
 
 static inline void cpu_instr_ret_cond(gb_cpu_t *cpu, bool condition)
@@ -2207,8 +2200,7 @@ static inline void cpu_instr_ret_cond(gb_cpu_t *cpu, bool condition)
 
     if (condition)
     {
-        uint16_t ret_addr = 0;
-        cpu_mem_read_word(cpu, cpu->sp, &ret_addr);
+        uint16_t ret_addr = cpu_mem_read_word(cpu, cpu->sp);
         cpu->sp += 2;
 
         cpu_jump(cpu, ret_addr);
@@ -2335,8 +2327,7 @@ static inline void cpu_instr_set(gb_cpu_t *cpu, int bit, uint8_t *value_ptr)
 
 static void cpu_step_cb(gb_cpu_t *cpu)
 {
-    uint8_t opcode = 0x00;
-    cpu_mem_read(cpu, cpu->pc, &opcode);
+    uint8_t opcode = cpu_mem_read(cpu, cpu->pc);
     cpu->pc++;
 
     uint8_t imm_val8 = 0;
@@ -2382,7 +2373,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x06:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_rlc(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2435,7 +2426,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x0E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_rrc(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2488,7 +2479,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x16:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_rl(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2541,7 +2532,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x1E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_rr(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2594,7 +2585,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x26:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_sla(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2647,7 +2638,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x2E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_sra(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2700,7 +2691,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x36:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_swap(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2753,7 +2744,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x3E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_srl(cpu, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -2806,7 +2797,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x46:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 0, &imm_val8);
 
         DISASM("bit 0, (hl)");
@@ -2855,7 +2846,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x4E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 1, &imm_val8);
 
         DISASM("bit 1, (hl)");
@@ -2904,7 +2895,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x56:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 2, &imm_val8);
 
         DISASM("bit 2, (hl)");
@@ -2953,7 +2944,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x5E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 3, &imm_val8);
 
         DISASM("bit 3, (hl)");
@@ -3002,7 +2993,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x66:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 4, &imm_val8);
 
         DISASM("bit 4, (hl)");
@@ -3051,7 +3042,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x6E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 5, &imm_val8);
 
         DISASM("bit 5, (hl)");
@@ -3100,7 +3091,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x76:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 6, &imm_val8);
 
         DISASM("bit 6, (hl)");
@@ -3149,7 +3140,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x7E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_bit(cpu, 7, &imm_val8);
 
         DISASM("bit 7, (hl)");
@@ -3201,7 +3192,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x86:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 0, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3251,7 +3242,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x8E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 1, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3301,7 +3292,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x96:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 2, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3351,7 +3342,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0x9E:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 3, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3401,7 +3392,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xA6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 4, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3451,7 +3442,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xAE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 5, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3501,7 +3492,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xB6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 6, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3551,7 +3542,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xBE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_res(cpu, 7, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3604,7 +3595,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xC6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 0, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3654,7 +3645,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xCE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 1, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3704,7 +3695,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xD6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 2, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3754,7 +3745,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xDE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 3, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3804,7 +3795,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xE6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 4, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3854,7 +3845,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xEE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 5, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3904,7 +3895,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xF6:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 6, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 
@@ -3954,7 +3945,7 @@ static void cpu_step_cb(gb_cpu_t *cpu)
         break;
 
     case 0xFE:
-        cpu_mem_read(cpu, cpu->reg_hl, &imm_val8);
+        imm_val8 = cpu_mem_read(cpu, cpu->reg_hl);
         cpu_instr_set(cpu, 7, &imm_val8);
         cpu_mem_write(cpu, cpu->reg_hl, imm_val8);
 

@@ -59,9 +59,9 @@ void mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart);
  * 
  * \param mmu MMU instance
  * \param addr Address to read
- * \param byte_out Where to store read byte
+ * \return Byte read
  */
-void mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out);
+uint8_t mmu_read(gb_mmu_t *mmu, uint16_t addr);
 
 /**
  * Emulates a memory write request from the CPU

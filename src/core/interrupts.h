@@ -68,17 +68,17 @@ void int_ie_write(gb_int_controller_t *ctrl, uint8_t value);
  * Emulates IF register reading
  * 
  * \param ctrl Interrupt controller instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void int_if_read(gb_int_controller_t *ctrl, uint8_t *value_out);
+uint8_t int_if_read(gb_int_controller_t *ctrl);
 
 /**
  * Emulates IE register reading
  * 
  * \param ctrl Interrupt controller instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void int_ie_read(gb_int_controller_t *ctrl, uint8_t *value_out);
+uint8_t int_ie_read(gb_int_controller_t *ctrl);
 
 /**
  * Makes an interrupt request

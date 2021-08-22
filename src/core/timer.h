@@ -77,33 +77,33 @@ void timer_tac_write(gb_timer_t *timer, uint8_t value);
  * Emulates DIV register reading
  * 
  * \param timer Timer instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void timer_div_read(gb_timer_t *timer, uint8_t *value_out);
+uint8_t timer_div_read(gb_timer_t *timer);
 
 /**
  * Emulates TIMA register reading
  * 
  * \param timer Timer instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void timer_tima_read(gb_timer_t *timer, uint8_t *value_out);
+uint8_t timer_tima_read(gb_timer_t *timer);
 
 /**
  * Emulates TMA register reading
  * 
  * \param timer Timer instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void timer_tma_read(gb_timer_t *timer, uint8_t *value_out);
+uint8_t timer_tma_read(gb_timer_t *timer);
 
 /**
  * Emulates TAC register reading
  * 
  * \param timer Timer instance
- * \param value_ptr Where to write value
+ * \return Register value
  */
-void timer_tac_read(gb_timer_t *timer, uint8_t *value_out);
+uint8_t timer_tac_read(gb_timer_t *timer);
 
 /**
  * Updates state of the timer according to elapsed cycles
