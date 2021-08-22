@@ -201,6 +201,7 @@ void cart_deinit(gb_cart_t *cart)
             GBSTATUS_WARN_PRINT("Unable to save");
     }
 
+    cart->mbc_deinit_func(cart);
     free(cart->ram);
     free(cart->rom);
 }
