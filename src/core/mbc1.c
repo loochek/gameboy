@@ -31,7 +31,7 @@ gbstatus_e mbc1_init(gb_cart_t *cart)
     return GBSTATUS_OK;
 }
 
-gbstatus_e mbc1_reset(gb_cart_t *cart)
+void mbc1_reset(gb_cart_t *cart)
 {
     assert(cart != NULL);
 
@@ -39,11 +39,9 @@ gbstatus_e mbc1_reset(gb_cart_t *cart)
     state->ram_enabled = false;
     state->second_mode = false;
     cart->curr_rom_bank = 1;
-
-    return GBSTATUS_OK;
 }
 
-gbstatus_e mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
+void mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
 {
     assert(cart != NULL);
     assert(byte_out != NULL);
@@ -88,11 +86,9 @@ gbstatus_e mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
         *byte_out = 0xFF;
         break;
     }
-
-    return GBSTATUS_OK;
 }
 
-gbstatus_e mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
+void mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
 {
     assert(cart != NULL);
 
@@ -196,14 +192,11 @@ gbstatus_e mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
     default:
         break;
     }
-
-    return GBSTATUS_OK;
 }
 
-gbstatus_e mbc1_deinit(gb_cart_t *cart)
+void mbc1_deinit(gb_cart_t *cart)
 {
     assert(cart != NULL);
-
+    
     free(cart->mbc_state);
-    return GBSTATUS_OK;
 }

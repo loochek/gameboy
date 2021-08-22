@@ -85,14 +85,14 @@ typedef struct gb_cpu
  * \param cpu CPU instance
  * \param gb Parent GB instance
  */
-gbstatus_e cpu_init(gb_cpu_t *cpu, struct gb *gb);
+void cpu_init(gb_cpu_t *cpu, struct gb *gb);
 
 /**
  * Resets the CPU
  * 
  * \param cpu CPU instance
  */
-gbstatus_e cpu_reset(gb_cpu_t *cpu);
+void cpu_reset(gb_cpu_t *cpu);
 
 /**
  * Makes an interrupt request to the CPU
@@ -107,7 +107,7 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec);
  * 
  * \param cpu CPU instance
  */
-gbstatus_e cpu_dump(gb_cpu_t *cpu);
+void cpu_dump(gb_cpu_t *cpu);
 
 /**
  * Fetches and executes one CPU instruction

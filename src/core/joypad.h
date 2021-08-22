@@ -34,7 +34,7 @@ typedef struct
  * \param joypad Joypad instance
  * \param gb Parent GB instance
  */
-gbstatus_e joypad_init(gb_joypad_t *joypad, struct gb *gb);
+void joypad_init(gb_joypad_t *joypad, struct gb *gb);
 
 /**
  * Resets the joypad
@@ -42,7 +42,7 @@ gbstatus_e joypad_init(gb_joypad_t *joypad, struct gb *gb);
  * \param joypad Joypad instance
  * \param gb Parent GB instance
  */
-gbstatus_e joypad_reset(gb_joypad_t *joypad);
+void joypad_reset(gb_joypad_t *joypad);
 
 /**
  * Emulates JOYP register reading
@@ -50,7 +50,7 @@ gbstatus_e joypad_reset(gb_joypad_t *joypad);
  * \param joypad Joypad instance
  * \param value_ptr Where to write value
  */
-gbstatus_e joypad_joyp_read(gb_joypad_t *joypad, uint8_t *value_out);
+void joypad_joyp_read(gb_joypad_t *joypad, uint8_t *value_out);
 
 /**
  * Emulates writing to the JOYP register
@@ -58,7 +58,7 @@ gbstatus_e joypad_joyp_read(gb_joypad_t *joypad, uint8_t *value_out);
  * \param joypad Joypad instance
  * \param value Value to write
  */
-gbstatus_e joypad_joyp_write(gb_joypad_t *joypad, uint8_t value);
+void joypad_joyp_write(gb_joypad_t *joypad, uint8_t value);
 
 /**
  * Updates state of the joypad
@@ -66,6 +66,6 @@ gbstatus_e joypad_joyp_write(gb_joypad_t *joypad, uint8_t value);
  * \param joypad Joypad instance
  * \param new_state Information about pressed buttons
  */
-gbstatus_e joypad_update(gb_joypad_t *joypad, int new_state);
+void joypad_update(gb_joypad_t *joypad, int new_state);
 
 #endif

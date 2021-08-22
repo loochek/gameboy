@@ -102,19 +102,13 @@ gbstatus_e run(const char *rom_path)
         goto cleanup2;
 
     const char *game_title = NULL;
-    status = gb_emu_game_title_ptr(&gb_emu, &game_title);
-    if (status != GBSTATUS_OK)
-        goto cleanup2;
+    gb_emu_game_title_ptr(&gb_emu, &game_title);
 
     const char *framebuffer = NULL;
-    status = gb_emu_framebuffer_ptr(&gb_emu, &framebuffer);
-    if (status != GBSTATUS_OK)
-        goto cleanup2;
+    gb_emu_framebuffer_ptr(&gb_emu, &framebuffer);
 
     const bool *frame_ready_ptr = NULL;
-    status = gb_emu_frame_ready_ptr(&gb_emu, &frame_ready_ptr);
-    if (status != GBSTATUS_OK)
-        goto cleanup2;
+    gb_emu_frame_ready_ptr(&gb_emu, &frame_ready_ptr);
 
     char window_title[GAME_TITLE_LEN + 20];
     strncpy(window_title, game_title, GAME_TITLE_LEN);
@@ -158,7 +152,7 @@ gbstatus_e run(const char *rom_path)
         if (sfKeyboard_isKeyPressed(sfKeyRight))
             joypad_state |= BUTTON_RIGHT;
 
-        GBCHK(gb_emu_update_input(&gb_emu, joypad_state));
+        gb_emu_update_input(&gb_emu, joypad_state);
 
         while (!(*frame_ready_ptr))
         {
@@ -167,7 +161,7 @@ gbstatus_e run(const char *rom_path)
                 goto cleanup2;
         }
 
-        GBCHK(gb_emu_grab_frame(&gb_emu));
+        gb_emu_grab_frame(&gb_emu);
 
         for (int y = 0; y < GB_SCREEN_HEIGHT; y++)
         {
@@ -186,7 +180,7 @@ gbstatus_e run(const char *rom_path)
     }
 
 cleanup2:
-    GBCHK(gb_emu_deinit(&gb_emu));
+    gb_emu_deinit(&gb_emu);
 
 cleanup1:
     deinit_sfml(&frontend);

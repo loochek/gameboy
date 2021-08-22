@@ -8,13 +8,12 @@ gbstatus_e mbc_none_init(gb_cart_t *cart)
     return GBSTATUS_OK;
 }
 
-gbstatus_e mbc_none_reset(gb_cart_t *cart)
+void mbc_none_reset(gb_cart_t *cart)
 {
     assert(cart != NULL);
-    return GBSTATUS_OK;
 }
 
-gbstatus_e mbc_none_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
+void mbc_none_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
 {
     assert(cart != NULL);
     assert(byte_out != NULL);
@@ -43,11 +42,9 @@ gbstatus_e mbc_none_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
         *byte_out = 0xFF;
         break;
     }
-
-    return GBSTATUS_OK;
 }
 
-gbstatus_e mbc_none_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
+void mbc_none_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
 {
     assert(cart != NULL);
 
@@ -73,12 +70,9 @@ gbstatus_e mbc_none_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
     default:
         break;
     }
-
-    return GBSTATUS_OK;
 }
 
-gbstatus_e mbc_none_deinit(gb_cart_t *cart)
+void mbc_none_deinit(gb_cart_t *cart)
 {
     assert(cart != NULL);
-    return GBSTATUS_OK;
 }

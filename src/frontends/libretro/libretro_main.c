@@ -112,13 +112,9 @@ void retro_init()
    if (status != GBSTATUS_OK)
       goto error_handler0;
 
-   status = gb_emu_framebuffer_ptr(&gb_emu, &gb_framebuffer);
-   if (status != GBSTATUS_OK)
-      goto error_handler1;
+   gb_emu_framebuffer_ptr(&gb_emu, &gb_framebuffer);
 
-   status = gb_emu_frame_ready_ptr(&gb_emu, &gb_frame_ready_ptr);
-   if (status != GBSTATUS_OK)
-      goto error_handler1;
+   gb_emu_frame_ready_ptr(&gb_emu, &gb_frame_ready_ptr);
 
    // XRGB8888
    out_framebuffer = calloc(GB_SCREEN_HEIGHT * GB_SCREEN_WIDTH * 4, sizeof(char));
@@ -229,12 +225,7 @@ void retro_run()
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       joypad_state |= BUTTON_RIGHT;
 
-   status = gb_emu_update_input(&gb_emu, joypad_state);
-   if (status != GBSTATUS_OK)
-   {
-      GBSTATUS_LOG_ERR("Emulation error!");
-      return;
-   }
+   gb_emu_update_input(&gb_emu, joypad_state);
 
    while (!(*gb_frame_ready_ptr))
    {
@@ -246,12 +237,7 @@ void retro_run()
       }
    }
 
-   status = gb_emu_grab_frame(&gb_emu);
-   if (status != GBSTATUS_OK)
-   {
-      GBSTATUS_LOG_ERR("Emulation error!");
-      return;
-   }
+   gb_emu_grab_frame(&gb_emu);
 
    for (int y = 0; y < GB_SCREEN_HEIGHT; y++)
    {
@@ -273,11 +259,7 @@ unsigned int retro_get_region()
 
 void retro_reset()
 {
-   gbstatus_e status = GBSTATUS_OK;
-
-   status = gb_emu_reset(&gb_emu);
-   if (status != GBSTATUS_OK)
-      GBSTATUS_LOG_ERR("Unable to reset!");
+   gb_emu_reset(&gb_emu);
 }
 
 void retro_unload_game()
@@ -288,14 +270,7 @@ void retro_unload_game()
       return;
    }
 
-   gbstatus_e status = GBSTATUS_OK;
-
-   status = gb_emu_unload_rom(&gb_emu);
-   if (status != GBSTATUS_OK)
-   {
-      GBSTATUS_LOG_ERR("Failed to unload game! Possible memory leak");
-      return;
-   }
+   gb_emu_unload_rom(&gb_emu);
 }
 
 void retro_deinit()
@@ -303,13 +278,8 @@ void retro_deinit()
    if (!core_initialized)
       return;
 
-   gbstatus_e status = GBSTATUS_OK;
-
    free(out_framebuffer);
-
-   status = gb_emu_deinit(&gb_emu);
-   if (status != GBSTATUS_OK)
-      GBSTATUS_LOG_ERR("Failed to deinitialize Gameboy core! Possible memory leak");
+   gb_emu_deinit(&gb_emu);
 
    core_initialized = false;
    return;

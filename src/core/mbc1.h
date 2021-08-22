@@ -22,7 +22,7 @@ gbstatus_e mbc1_init(struct gb_cart *cart);
  * 
  * \param cart Cartridge instance
  */
-gbstatus_e mbc1_reset(struct gb_cart *cart);
+void mbc1_reset(struct gb_cart *cart);
 
 /**
  * Implements memory reading requests to the cartridge with MBC1
@@ -31,7 +31,7 @@ gbstatus_e mbc1_reset(struct gb_cart *cart);
  * \param addr Address to read
  * \param byte_out Where to store read byte
  */
-gbstatus_e mbc1_read(struct gb_cart *cart, uint16_t addr, uint8_t *byte_out);
+void mbc1_read(struct gb_cart *cart, uint16_t addr, uint8_t *byte_out);
 
 /**
  * Implements memory writing requests to the cartridge with MBC1
@@ -40,13 +40,13 @@ gbstatus_e mbc1_read(struct gb_cart *cart, uint16_t addr, uint8_t *byte_out);
  * \param addr Address to write
  * \param byte Byte to write
  */
-gbstatus_e mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte);
+void mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte);
 
 /**
  * Deinitializes MBC1
  * 
  * \param cart Cartridge instance
  */
-gbstatus_e mbc1_deinit(struct gb_cart *cart);
+void mbc1_deinit(struct gb_cart *cart);
 
 #endif

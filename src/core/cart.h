@@ -14,9 +14,9 @@ struct gb_cart;
 #define ROM_BANK_SIZE  0x4000
 #define SRAM_BANK_SIZE 0x2000
 
-typedef gbstatus_e (*cart_read_func_t )(struct gb_cart *cart, uint16_t addr, uint8_t *byte_out);
-typedef gbstatus_e (*cart_write_func_t)(struct gb_cart *cart, uint16_t addr, uint8_t byte);
-typedef gbstatus_e (*cart_misc_func_t )(struct gb_cart *cart);
+typedef void (*cart_read_func_t )(struct gb_cart *cart, uint16_t addr, uint8_t *byte_out);
+typedef void (*cart_write_func_t)(struct gb_cart *cart, uint16_t addr, uint8_t byte);
+typedef void (*cart_misc_func_t )(struct gb_cart *cart);
 
 /**
  * Represents Gameboy cartridge. 
@@ -66,7 +66,7 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path);
  * 
  * \param cart Cartridge instance
  */
-gbstatus_e cart_reset(gb_cart_t *cart);
+void cart_reset(gb_cart_t *cart);
 
 /**
  * Emulates a memory read request to the cartridge
@@ -75,7 +75,7 @@ gbstatus_e cart_reset(gb_cart_t *cart);
  * \param addr Address to read
  * \param byte_out Where to store read byte
  */
-gbstatus_e cart_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out);
+void cart_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out);
 
 /**
  * Emulates a memory write request to the cartridge
@@ -84,13 +84,13 @@ gbstatus_e cart_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out);
  * \param addr Address to write
  * \param byte Byte to write
  */
-gbstatus_e cart_write(gb_cart_t *cart, uint16_t addr, uint8_t byte);
+void cart_write(gb_cart_t *cart, uint16_t addr, uint8_t byte);
 
 /**
  * Deinitializes the instance of the cartridge
  * 
  * \param cart Cartridge instance
  */
-gbstatus_e cart_deinit(gb_cart_t *cart);
+void cart_deinit(gb_cart_t *cart);
 
 #endif

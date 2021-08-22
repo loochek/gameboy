@@ -44,7 +44,7 @@ gbstatus_e mmu_init(gb_mmu_t *mmu, struct gb *gb);
  * 
  * \param mmu MMU instance
  */
-gbstatus_e mmu_reset(gb_mmu_t *mmu);
+void mmu_reset(gb_mmu_t *mmu);
 
 /**
  * Changes the cartridge
@@ -52,7 +52,7 @@ gbstatus_e mmu_reset(gb_mmu_t *mmu);
  * \param mmu MMU instance
  * \param cart Cartridge instance
  */
-gbstatus_e mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart);
+void mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart);
 
 /**
  * Emulates a memory read request from the CPU
@@ -61,7 +61,7 @@ gbstatus_e mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart);
  * \param addr Address to read
  * \param byte_out Where to store read byte
  */
-gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out);
+void mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out);
 
 /**
  * Emulates a memory write request from the CPU
@@ -70,13 +70,13 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out);
  * \param addr Address to write
  * \param byte Byte to write
  */
-gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte);
+void mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte);
 
 /**
  * Deinitializes the instance of the MMU
  * 
  * \param mmu MMU instance
  */
-gbstatus_e mmu_deinit(gb_mmu_t *mmu);
+void mmu_deinit(gb_mmu_t *mmu);
 
 #endif

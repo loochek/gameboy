@@ -173,22 +173,22 @@ error_handler0:
     return status;
 }
 
-gbstatus_e cart_reset(gb_cart_t *cart)
+void cart_reset(gb_cart_t *cart)
 {
-    return cart->mbc_reset_func(cart);
+    cart->mbc_reset_func(cart);
 }
 
-gbstatus_e cart_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
+void cart_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
 {
-    return cart->mbc_read_func(cart, addr, byte_out);
+    cart->mbc_read_func(cart, addr, byte_out);
 }
 
-gbstatus_e cart_write(gb_cart_t *cart, uint16_t addr, uint8_t byte)
+void cart_write(gb_cart_t *cart, uint16_t addr, uint8_t byte)
 {
-    return cart->mbc_write_func(cart, addr, byte);
+    cart->mbc_write_func(cart, addr, byte);
 }
 
-gbstatus_e cart_deinit(gb_cart_t *cart)
+void cart_deinit(gb_cart_t *cart)
 {
     gbstatus_e status = GBSTATUS_OK;
 
@@ -199,15 +199,10 @@ gbstatus_e cart_deinit(gb_cart_t *cart)
         status = cart_save_sram(cart);
         if (status != GBSTATUS_OK)
             GBSTATUS_WARN_PRINT("Unable to save");
-
-        status = GBSTATUS_OK;
     }
 
-    GBCHK(cart->mbc_deinit_func(cart));
     free(cart->ram);
     free(cart->rom);
-
-    return GBSTATUS_OK;
 }
 
 static gbstatus_e cart_load_sram(gb_cart_t *cart)

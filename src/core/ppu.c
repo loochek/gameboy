@@ -78,7 +78,7 @@
 (  ((ppu->vram[(addr) + 2 * (y_offs)    ] >> (7 - (x_offs))) & 0x1) |      \
   (((ppu->vram[(addr) + 2 * (y_offs) + 1] >> (7 - (x_offs))) & 0x1) << 1))
 
-static gbstatus_e ppu_handle_lyc(gb_ppu_t *ppu);
+static void ppu_handle_lyc(gb_ppu_t *ppu);
 
 static void ppu_render_scanline    (gb_ppu_t *ppu);
 static void ppu_render_bg_scanline (gb_ppu_t *ppu);
@@ -126,14 +126,8 @@ gbstatus_e ppu_init(gb_ppu_t *ppu, struct gb *gb)
         goto error_handler3;
     }
 
-    status = ppu_reset(ppu);
-    if (status != GBSTATUS_OK)
-        goto error_handler4;
-
+    ppu_reset(ppu);
     return GBSTATUS_OK;
-
-error_handler4:
-    free(ppu->bg_scanline_buffer);
 
 error_handler3:
     free(ppu->framebuffer);
@@ -148,7 +142,7 @@ error_handler0:
     return status;
 }
 
-gbstatus_e ppu_reset(gb_ppu_t *ppu)
+void ppu_reset(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
 
@@ -170,11 +164,9 @@ gbstatus_e ppu_reset(gb_ppu_t *ppu)
 
     ppu->window_line = 0;
     ppu->delayed_wy  = -1;
-
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
+void ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 {
     assert(ppu != NULL);
 
@@ -204,7 +196,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
         switch (ppu->next_state)
         {
         case STATE_OBJ_SEARCH:
-            GBCHK(ppu_handle_lyc(ppu));
+            ppu_handle_lyc(ppu);
                 
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 0);
             SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 1);
@@ -236,7 +228,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 
             if (GET_BIT(ppu->reg_stat, STAT_HBLANK_INT_BIT) && !ppu->lcdc_blocked)
             {
-                GBCHK(int_request(&gb->intr_ctrl, INT_LCDC));
+                int_request(&gb->intr_ctrl, INT_LCDC);
                 ppu->lcdc_blocked = true;
             }
 
@@ -262,16 +254,16 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
                 SET_BIT(ppu->reg_stat, STAT_STATE_BIT0, 1);
                 SET_BIT(ppu->reg_stat, STAT_STATE_BIT1, 0);
 
-                GBCHK(int_request(&gb->intr_ctrl, INT_VBLANK));
+                int_request(&gb->intr_ctrl, INT_VBLANK);
                 
                 ppu->new_frame_ready = true;
             }
 
-            GBCHK(ppu_handle_lyc(ppu));
+            ppu_handle_lyc(ppu);
 
             if (GET_BIT(ppu->reg_stat, STAT_VBLANK_INT_BIT) && !ppu->lcdc_blocked)
             {
-                GBCHK(int_request(&gb->intr_ctrl, INT_LCDC));
+                int_request(&gb->intr_ctrl, INT_LCDC);
                 ppu->lcdc_blocked = true;
             }
 
@@ -294,7 +286,7 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
         case STATE_VBLANK_LAST_LINE:
             ppu->reg_ly = 0;
 
-            GBCHK(ppu_handle_lyc(ppu));
+            ppu_handle_lyc(ppu);
         
             ppu->next_state = STATE_VBLANK_LAST_LINE_INC;
             ppu->clocks_to_next_state = STATE_VBLANK_DURATION;
@@ -317,137 +309,121 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
             ppu->clocks_to_next_state = STATE_VBLANK_INC_DURATION;
         } 
     }
-
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_lcdc_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_lcdc_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_lcdc;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_stat_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_stat_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_stat;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_ly_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_ly_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_ly;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_lyc_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_lyc_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_lyc;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_scx;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_scy;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_wx;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_wy;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_bgp;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_obp0;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = ppu->reg_obp1;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out)
+void ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
     assert(ppu != NULL);
     assert(value_out != NULL);
 
     *value_out = 0xFF;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_vram_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
+void ppu_vram_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
 {
     assert(ppu != NULL);
     assert(byte_out != NULL);
 
     *byte_out = ppu->vram[addr - 0x8000];
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_oam_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
+void ppu_oam_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
 {
     assert(ppu != NULL);
     assert(byte_out != NULL);
 
     *byte_out = ppu->oam[addr - 0xFE00];
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_lcdc_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_lcdc_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
@@ -482,119 +458,104 @@ gbstatus_e ppu_lcdc_write(gb_ppu_t *ppu, uint8_t value)
 	}
 
     ppu->reg_lcdc = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_stat_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_stat_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_stat = (ppu->reg_stat & 0x7) | (value & 0x78);
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_ly_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_ly_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     // writing LY is not allowed
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_lyc_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_lyc_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_lyc = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_scx_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_scx_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_scx = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_scy_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_scy_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_scy = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_wx_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_wx_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_wx = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_wy_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_wy_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->delayed_wy = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_bgp_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_bgp_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_bgp = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_obp0_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_obp0_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_obp0 = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_obp1_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_obp1_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     ppu->reg_obp1 = value;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_dma_write(gb_ppu_t *ppu, uint8_t value)
+void ppu_dma_write(gb_ppu_t *ppu, uint8_t value)
 {
     assert(ppu != NULL);
 
     if (value > 0xDF)
-        return GBSTATUS_OK;
+        return;
 
     for (uint8_t i = 0; i < OAM_SIZE; i++)
-        GBCHK(mmu_read(&ppu->gb->mmu, (value << 8) | i, &ppu->oam[i]));
-
-    return GBSTATUS_OK;
+        mmu_read(&ppu->gb->mmu, (value << 8) | i, &ppu->oam[i]);
 }
 
-gbstatus_e ppu_vram_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
+void ppu_vram_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
 {
     assert(ppu != NULL);
 
     ppu->vram[addr - 0x8000] = byte;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_oam_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
+void ppu_oam_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
 {
     assert(ppu != NULL);
 
     ppu->oam[addr - 0xFE00] = byte;
-    return GBSTATUS_OK;
 }
 
-gbstatus_e ppu_deinit(gb_ppu_t *ppu)
+void ppu_deinit(gb_ppu_t *ppu)
 {
     assert(ppu != NULL);
 
@@ -602,10 +563,9 @@ gbstatus_e ppu_deinit(gb_ppu_t *ppu)
     free(ppu->oam);
     free(ppu->framebuffer);
     free(ppu->bg_scanline_buffer);
-    return GBSTATUS_OK;
 }
 
-static gbstatus_e ppu_handle_lyc(gb_ppu_t *ppu)
+static void ppu_handle_lyc(gb_ppu_t *ppu)
 {
     if (ppu->reg_ly == ppu->reg_lyc)
     {
@@ -613,14 +573,12 @@ static gbstatus_e ppu_handle_lyc(gb_ppu_t *ppu)
 
         if (GET_BIT(ppu->reg_stat, STAT_LYC_INT_BIT) && !ppu->lcdc_blocked)
         {
-            GBCHK(int_request(&ppu->gb->intr_ctrl, INT_LCDC));
+            int_request(&ppu->gb->intr_ctrl, INT_LCDC);
             ppu->lcdc_blocked = true;
         }
     }
     else
         SET_BIT(ppu->reg_stat, STAT_LYC_FLAG_BIT, 0);
-
-    return GBSTATUS_OK;
 }
 
 static void ppu_render_scanline(gb_ppu_t *ppu)

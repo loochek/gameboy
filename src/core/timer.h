@@ -32,14 +32,14 @@ typedef struct gb_timer
  * \param timer Timer instance
  * \param gb Parent GB instance
  */
-gbstatus_e timer_init(gb_timer_t *timer, struct gb *gb);
+void timer_init(gb_timer_t *timer, struct gb *gb);
 
 /**
  * Resets the timer
  * 
  * \param timer Timer instance
  */
-gbstatus_e timer_reset(gb_timer_t *timer);
+void timer_reset(gb_timer_t *timer);
 
 /**
  * Emulates writing to the DIV register 
@@ -47,7 +47,7 @@ gbstatus_e timer_reset(gb_timer_t *timer);
  * \param timer Timer instance
  * \param value Value to write
  */
-gbstatus_e timer_div_write(gb_timer_t *timer, uint8_t value);
+void timer_div_write(gb_timer_t *timer, uint8_t value);
 
 /**
  * Emulates writing to the TIMA register 
@@ -55,7 +55,7 @@ gbstatus_e timer_div_write(gb_timer_t *timer, uint8_t value);
  * \param timer Timer instance
  * \param value Value to write
  */
-gbstatus_e timer_tima_write(gb_timer_t *timer, uint8_t value);
+void timer_tima_write(gb_timer_t *timer, uint8_t value);
 
 /**
  * Emulates writing to the TMA register 
@@ -63,7 +63,7 @@ gbstatus_e timer_tima_write(gb_timer_t *timer, uint8_t value);
  * \param timer Timer instance
  * \param value Value to write
  */
-gbstatus_e timer_tma_write(gb_timer_t *timer, uint8_t value);
+void timer_tma_write(gb_timer_t *timer, uint8_t value);
 
 /**
  * Emulates writing to the TAC register 
@@ -71,7 +71,7 @@ gbstatus_e timer_tma_write(gb_timer_t *timer, uint8_t value);
  * \param timer Timer instance
  * \param value Value to write
  */
-gbstatus_e timer_tac_write(gb_timer_t *timer, uint8_t value);
+void timer_tac_write(gb_timer_t *timer, uint8_t value);
 
 /**
  * Emulates DIV register reading
@@ -79,7 +79,7 @@ gbstatus_e timer_tac_write(gb_timer_t *timer, uint8_t value);
  * \param timer Timer instance
  * \param value_ptr Where to write value
  */
-gbstatus_e timer_div_read(gb_timer_t *timer, uint8_t *value_out);
+void timer_div_read(gb_timer_t *timer, uint8_t *value_out);
 
 /**
  * Emulates TIMA register reading
@@ -87,7 +87,7 @@ gbstatus_e timer_div_read(gb_timer_t *timer, uint8_t *value_out);
  * \param timer Timer instance
  * \param value_ptr Where to write value
  */
-gbstatus_e timer_tima_read(gb_timer_t *timer, uint8_t *value_out);
+void timer_tima_read(gb_timer_t *timer, uint8_t *value_out);
 
 /**
  * Emulates TMA register reading
@@ -95,7 +95,7 @@ gbstatus_e timer_tima_read(gb_timer_t *timer, uint8_t *value_out);
  * \param timer Timer instance
  * \param value_ptr Where to write value
  */
-gbstatus_e timer_tma_read(gb_timer_t *timer, uint8_t *value_out);
+void timer_tma_read(gb_timer_t *timer, uint8_t *value_out);
 
 /**
  * Emulates TAC register reading
@@ -103,7 +103,7 @@ gbstatus_e timer_tma_read(gb_timer_t *timer, uint8_t *value_out);
  * \param timer Timer instance
  * \param value_ptr Where to write value
  */
-gbstatus_e timer_tac_read(gb_timer_t *timer, uint8_t *value_out);
+void timer_tac_read(gb_timer_t *timer, uint8_t *value_out);
 
 /**
  * Updates state of the timer according to elapsed cycles
@@ -111,6 +111,6 @@ gbstatus_e timer_tac_read(gb_timer_t *timer, uint8_t *value_out);
  * \param timer Timer instance
  * \param elapsed_cycles Clock cycles delta
  */
-gbstatus_e timer_update(gb_timer_t *timer, int elapsed_cycles);
+void timer_update(gb_timer_t *timer, int elapsed_cycles);
 
 #endif
