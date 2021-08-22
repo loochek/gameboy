@@ -1,4 +1,5 @@
 #include <string.h>
+#include <assert.h>
 #include "ppu.h"
 #include "gb.h"
 
@@ -92,11 +93,8 @@ gbstatus_e ppu_init(gb_ppu_t *ppu, struct gb *gb)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(gb != NULL);
 
     ppu->gb = gb;
 
@@ -152,13 +150,7 @@ error_handler0:
 
 gbstatus_e ppu_reset(gb_ppu_t *ppu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_lcdc = 0x91;
     ppu->reg_stat = 0x85;
@@ -184,13 +176,7 @@ gbstatus_e ppu_reset(gb_ppu_t *ppu)
 
 gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     gb_t *gb = ppu->gb;
 
@@ -337,13 +323,8 @@ gbstatus_e ppu_update(gb_ppu_t *ppu, int elapsed_cycles)
 
 gbstatus_e ppu_lcdc_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_lcdc;
     return GBSTATUS_OK;
@@ -351,13 +332,8 @@ gbstatus_e ppu_lcdc_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_stat_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_stat;
     return GBSTATUS_OK;
@@ -365,13 +341,8 @@ gbstatus_e ppu_stat_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_ly_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_ly;
     return GBSTATUS_OK;
@@ -379,13 +350,8 @@ gbstatus_e ppu_ly_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_lyc_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_lyc;
     return GBSTATUS_OK;
@@ -393,13 +359,8 @@ gbstatus_e ppu_lyc_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_scx;
     return GBSTATUS_OK;
@@ -407,13 +368,8 @@ gbstatus_e ppu_scx_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_scy;
     return GBSTATUS_OK;
@@ -421,13 +377,8 @@ gbstatus_e ppu_scy_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_wx;
     return GBSTATUS_OK;
@@ -435,13 +386,8 @@ gbstatus_e ppu_wx_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_wy;
     return GBSTATUS_OK;
@@ -449,13 +395,8 @@ gbstatus_e ppu_wy_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_bgp;
     return GBSTATUS_OK;
@@ -463,13 +404,8 @@ gbstatus_e ppu_bgp_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_obp0;
     return GBSTATUS_OK;
@@ -477,13 +413,8 @@ gbstatus_e ppu_obp0_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = ppu->reg_obp1;
     return GBSTATUS_OK;
@@ -491,13 +422,8 @@ gbstatus_e ppu_obp1_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(value_out != NULL);
 
     *value_out = 0xFF;
     return GBSTATUS_OK;
@@ -505,13 +431,8 @@ gbstatus_e ppu_dma_read(gb_ppu_t *ppu, uint8_t *value_out)
 
 gbstatus_e ppu_vram_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(byte_out != NULL);
 
     *byte_out = ppu->vram[addr - 0x8000];
     return GBSTATUS_OK;
@@ -519,13 +440,8 @@ gbstatus_e ppu_vram_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
 
 gbstatus_e ppu_oam_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
+    assert(byte_out != NULL);
 
     *byte_out = ppu->oam[addr - 0xFE00];
     return GBSTATUS_OK;
@@ -533,13 +449,7 @@ gbstatus_e ppu_oam_read(gb_ppu_t *ppu, uint16_t addr, uint8_t *byte_out)
 
 gbstatus_e ppu_lcdc_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     if (!GET_BIT(value, LCDC_PPU_ON_BIT))
     {
@@ -577,13 +487,7 @@ gbstatus_e ppu_lcdc_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_stat_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_stat = (ppu->reg_stat & 0x7) | (value & 0x78);
     return GBSTATUS_OK;
@@ -591,13 +495,7 @@ gbstatus_e ppu_stat_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_ly_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     // writing LY is not allowed
     return GBSTATUS_OK;
@@ -605,13 +503,7 @@ gbstatus_e ppu_ly_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_lyc_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_lyc = value;
     return GBSTATUS_OK;
@@ -619,13 +511,7 @@ gbstatus_e ppu_lyc_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_scx_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_scx = value;
     return GBSTATUS_OK;
@@ -633,13 +519,7 @@ gbstatus_e ppu_scx_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_scy_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_scy = value;
     return GBSTATUS_OK;
@@ -647,13 +527,7 @@ gbstatus_e ppu_scy_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_wx_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_wx = value;
     return GBSTATUS_OK;
@@ -661,13 +535,7 @@ gbstatus_e ppu_wx_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_wy_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->delayed_wy = value;
     return GBSTATUS_OK;
@@ -675,13 +543,7 @@ gbstatus_e ppu_wy_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_bgp_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_bgp = value;
     return GBSTATUS_OK;
@@ -689,13 +551,7 @@ gbstatus_e ppu_bgp_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_obp0_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_obp0 = value;
     return GBSTATUS_OK;
@@ -703,13 +559,7 @@ gbstatus_e ppu_obp0_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_obp1_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->reg_obp1 = value;
     return GBSTATUS_OK;
@@ -717,13 +567,7 @@ gbstatus_e ppu_obp1_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_dma_write(gb_ppu_t *ppu, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     if (value > 0xDF)
         return GBSTATUS_OK;
@@ -736,13 +580,7 @@ gbstatus_e ppu_dma_write(gb_ppu_t *ppu, uint8_t value)
 
 gbstatus_e ppu_vram_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->vram[addr - 0x8000] = byte;
     return GBSTATUS_OK;
@@ -750,13 +588,7 @@ gbstatus_e ppu_vram_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
 
 gbstatus_e ppu_oam_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
+    assert(ppu != NULL);
 
     ppu->oam[addr - 0xFE00] = byte;
     return GBSTATUS_OK;
@@ -764,17 +596,7 @@ gbstatus_e ppu_oam_write(gb_ppu_t *ppu, uint16_t addr, uint8_t byte)
 
 gbstatus_e ppu_deinit(gb_ppu_t *ppu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ppu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as PPU instance");
-        return status;
-    }
-
-    // FILE *vram_file = fopen("oam.bin", "wb");
-    // fwrite(ppu->oam, sizeof(uint8_t), OAM_SIZE, vram_file);
-    // fclose(vram_file);
+    assert(ppu != NULL);
 
     free(ppu->vram);
     free(ppu->oam);

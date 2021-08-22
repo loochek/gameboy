@@ -1,33 +1,23 @@
+#include <assert.h>
 #include "mbc_none.h"
 #include "cart.h"
 
 gbstatus_e mbc_none_init(gb_cart_t *cart)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
-
+    assert(cart != NULL);
     return GBSTATUS_OK;
 }
 
 gbstatus_e mbc_none_reset(gb_cart_t *cart)
 {
+    assert(cart != NULL);
     return GBSTATUS_OK;
 }
 
 gbstatus_e mbc_none_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
+    assert(byte_out != NULL);
 
     switch (addr & 0xF000)
     {
@@ -59,13 +49,7 @@ gbstatus_e mbc_none_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
 
 gbstatus_e mbc_none_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
 
     switch (addr & 0xF000)
     {
@@ -95,13 +79,6 @@ gbstatus_e mbc_none_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
 
 gbstatus_e mbc_none_deinit(gb_cart_t *cart)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
-
+    assert(cart != NULL);
     return GBSTATUS_OK;
 }

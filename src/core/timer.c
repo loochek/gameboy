@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "timer.h"
 #include "gb.h"
 
@@ -15,13 +16,8 @@ static int timer_periods[] =
 
 gbstatus_e timer_init(gb_timer_t *timer, struct gb *gb)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
+    assert(gb != NULL);
 
     timer->gb = gb;
 
@@ -31,13 +27,7 @@ gbstatus_e timer_init(gb_timer_t *timer, struct gb *gb)
 
 gbstatus_e timer_reset(gb_timer_t *timer)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
 
     timer->reg_div  = 0x00;
     timer->reg_tima = 0;
@@ -52,13 +42,7 @@ gbstatus_e timer_reset(gb_timer_t *timer)
 
 gbstatus_e timer_div_write(gb_timer_t *timer, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
 
     timer->reg_div = 0x00;
     return GBSTATUS_OK;
@@ -66,13 +50,7 @@ gbstatus_e timer_div_write(gb_timer_t *timer, uint8_t value)
 
 gbstatus_e timer_tima_write(gb_timer_t *timer, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
 
     timer->reg_tima = value;
     return GBSTATUS_OK;
@@ -80,13 +58,7 @@ gbstatus_e timer_tima_write(gb_timer_t *timer, uint8_t value)
 
 gbstatus_e timer_tma_write(gb_timer_t *timer, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
 
     timer->reg_tma = value;
     return GBSTATUS_OK;
@@ -94,13 +66,7 @@ gbstatus_e timer_tma_write(gb_timer_t *timer, uint8_t value)
 
 gbstatus_e timer_tac_write(gb_timer_t *timer, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
 
     timer->reg_tac = value;
     return GBSTATUS_OK;
@@ -108,13 +74,8 @@ gbstatus_e timer_tac_write(gb_timer_t *timer, uint8_t value)
 
 gbstatus_e timer_div_read(gb_timer_t *timer, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
+    assert(value_out != NULL);
 
     *value_out = timer->reg_div;
     return GBSTATUS_OK;
@@ -122,13 +83,8 @@ gbstatus_e timer_div_read(gb_timer_t *timer, uint8_t *value_out)
 
 gbstatus_e timer_tima_read(gb_timer_t *timer, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
+    assert(value_out != NULL);
 
     *value_out = timer->reg_tima;
     return GBSTATUS_OK;
@@ -136,13 +92,8 @@ gbstatus_e timer_tima_read(gb_timer_t *timer, uint8_t *value_out)
 
 gbstatus_e timer_tma_read(gb_timer_t *timer, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
+    assert(value_out != NULL);
 
     *value_out = timer->reg_tma;
     return GBSTATUS_OK;
@@ -150,13 +101,8 @@ gbstatus_e timer_tma_read(gb_timer_t *timer, uint8_t *value_out)
 
 gbstatus_e timer_tac_read(gb_timer_t *timer, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
+    assert(value_out != NULL);
 
     *value_out = timer->reg_tac;
     return GBSTATUS_OK;
@@ -164,13 +110,7 @@ gbstatus_e timer_tac_read(gb_timer_t *timer, uint8_t *value_out)
 
 gbstatus_e timer_update(gb_timer_t *timer, int elapsed_cycles)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (timer == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as timer instance");
-        return status;
-    }
+    assert(timer != NULL);
 
     timer->div_cycles += elapsed_cycles;
     int div_ticks = timer->div_cycles / DIV_TICK_PERIOD;

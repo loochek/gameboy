@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "joypad.h"
 #include "gb.h"
 
@@ -6,13 +7,8 @@ static void joypad_update_reg(gb_joypad_t *joypad);
 
 gbstatus_e joypad_init(gb_joypad_t *joypad, struct gb *gb)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (joypad == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an joypad instance");
-        return status;
-    }
+    assert(joypad != NULL);
+    assert(gb != NULL);
 
     joypad->gb = gb;
 
@@ -22,13 +18,7 @@ gbstatus_e joypad_init(gb_joypad_t *joypad, struct gb *gb)
 
 gbstatus_e joypad_reset(gb_joypad_t *joypad)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (joypad == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an joypad instance");
-        return status;
-    }
+    assert(joypad != NULL);
 
     // Nothing is pressed
     joypad->state    = 0;
@@ -38,13 +28,8 @@ gbstatus_e joypad_reset(gb_joypad_t *joypad)
 
 gbstatus_e joypad_joyp_read(gb_joypad_t *joypad, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (joypad == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an joypad instance");
-        return status;
-    }
+    assert(joypad != NULL);
+    assert(value_out != NULL);
 
     *value_out = joypad->reg_joyp;
     return GBSTATUS_OK;
@@ -52,13 +37,7 @@ gbstatus_e joypad_joyp_read(gb_joypad_t *joypad, uint8_t *value_out)
 
 gbstatus_e joypad_joyp_write(gb_joypad_t *joypad, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (joypad == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an joypad instance");
-        return status;
-    }
+    assert(joypad != NULL);
 
     // Only P14 and P15 are needed actually
     joypad->reg_joyp = value;
@@ -69,13 +48,7 @@ gbstatus_e joypad_joyp_write(gb_joypad_t *joypad, uint8_t value)
 
 gbstatus_e joypad_update(gb_joypad_t *joypad, int new_state)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (joypad == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an joypad instance");
-        return status;
-    }
+    assert(joypad != NULL);
 
     joypad->state = new_state;
     joypad_update_reg(joypad);

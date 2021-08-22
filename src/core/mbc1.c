@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "mbc1.h"
 #include "cart.h"
 
@@ -18,11 +19,7 @@ gbstatus_e mbc1_init(gb_cart_t *cart)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
 
     cart->mbc_state = calloc(1, sizeof(mbc1_state_t));
     if (cart->mbc_state == NULL)
@@ -36,13 +33,7 @@ gbstatus_e mbc1_init(gb_cart_t *cart)
 
 gbstatus_e mbc1_reset(gb_cart_t *cart)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
 
     mbc1_state_t *state = (mbc1_state_t*)cart->mbc_state;
     state->ram_enabled = false;
@@ -54,13 +45,8 @@ gbstatus_e mbc1_reset(gb_cart_t *cart)
 
 gbstatus_e mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
+    assert(byte_out != NULL);
 
     mbc1_state_t *state = (mbc1_state_t*)cart->mbc_state;
 
@@ -108,13 +94,7 @@ gbstatus_e mbc1_read(gb_cart_t *cart, uint16_t addr, uint8_t *byte_out)
 
 gbstatus_e mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
 
     mbc1_state_t *state = (mbc1_state_t*)cart->mbc_state;
 
@@ -222,13 +202,7 @@ gbstatus_e mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
 
 gbstatus_e mbc1_deinit(gb_cart_t *cart)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
 
     free(cart->mbc_state);
     return GBSTATUS_OK;

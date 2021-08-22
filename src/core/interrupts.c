@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "interrupts.h"
 #include "gb.h"
 
@@ -14,13 +15,8 @@ static uint8_t isr_addr[] =
 
 gbstatus_e int_init(gb_int_controller_t *ctrl, gb_t *gb)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
+    assert(gb   != NULL);
 
     ctrl->gb = gb;
     GBCHK(int_reset(ctrl));
@@ -30,13 +26,7 @@ gbstatus_e int_init(gb_int_controller_t *ctrl, gb_t *gb)
 
 gbstatus_e int_reset(gb_int_controller_t *ctrl)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
 
     ctrl->reg_ie = 0x00;
     ctrl->reg_if = 0x00;
@@ -46,13 +36,7 @@ gbstatus_e int_reset(gb_int_controller_t *ctrl)
 
 gbstatus_e int_if_write(gb_int_controller_t *ctrl, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
 
     ctrl->reg_if = value;
     return GBSTATUS_OK;
@@ -60,13 +44,7 @@ gbstatus_e int_if_write(gb_int_controller_t *ctrl, uint8_t value)
 
 gbstatus_e int_ie_write(gb_int_controller_t *ctrl, uint8_t value)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
 
     ctrl->reg_ie = value;
     return GBSTATUS_OK;
@@ -74,13 +52,8 @@ gbstatus_e int_ie_write(gb_int_controller_t *ctrl, uint8_t value)
 
 gbstatus_e int_if_read(gb_int_controller_t *ctrl, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
+    assert(value_out != NULL);
 
     *value_out = ctrl->reg_if;
     return GBSTATUS_OK;
@@ -88,13 +61,8 @@ gbstatus_e int_if_read(gb_int_controller_t *ctrl, uint8_t *value_out)
 
 gbstatus_e int_ie_read(gb_int_controller_t *ctrl, uint8_t *value_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
+    assert(value_out != NULL);
 
     *value_out = ctrl->reg_ie;
     return GBSTATUS_OK;
@@ -102,13 +70,7 @@ gbstatus_e int_ie_read(gb_int_controller_t *ctrl, uint8_t *value_out)
 
 gbstatus_e int_request(gb_int_controller_t *ctrl, interrupt_e intr)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
 
     ctrl->reg_if |= 1 << intr;
     return GBSTATUS_OK;
@@ -118,11 +80,7 @@ gbstatus_e int_step(gb_int_controller_t *ctrl)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    if (ctrl == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as an interrupt controller instance");
-        return status;
-    }
+    assert(ctrl != NULL);
 
     for (interrupt_e intr = 0; intr < INT_COUNT; intr++)
     {

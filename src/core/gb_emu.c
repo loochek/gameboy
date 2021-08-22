@@ -1,14 +1,11 @@
+#include <assert.h>
 #include "gb_emu.h"
 
 gbstatus_e gb_emu_init(gb_emu_t *gb_emu)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
 
     gb_t *gb = &gb_emu->gb;
 
@@ -51,13 +48,8 @@ error_handler0:
 
 gbstatus_e gb_emu_framebuffer_ptr(gb_emu_t *gb_emu, const char **fb_ptr_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
+    assert(fb_ptr_out != NULL);
 
     *fb_ptr_out = gb_emu->gb.ppu.framebuffer;
     return GBSTATUS_OK;
@@ -65,13 +57,8 @@ gbstatus_e gb_emu_framebuffer_ptr(gb_emu_t *gb_emu, const char **fb_ptr_out)
 
 gbstatus_e gb_emu_frame_ready_ptr(gb_emu_t *gb_emu, const bool **ready_ptr_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
+    assert(ready_ptr_out != NULL);
 
     *ready_ptr_out = &gb_emu->gb.ppu.new_frame_ready;
     return GBSTATUS_OK;
@@ -79,13 +66,7 @@ gbstatus_e gb_emu_frame_ready_ptr(gb_emu_t *gb_emu, const bool **ready_ptr_out)
 
 gbstatus_e gb_emu_grab_frame(gb_emu_t *gb_emu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
 
     gb_emu->gb.ppu.new_frame_ready = false;
     return GBSTATUS_OK;
@@ -93,13 +74,8 @@ gbstatus_e gb_emu_grab_frame(gb_emu_t *gb_emu)
 
 gbstatus_e gb_emu_game_title_ptr(gb_emu_t *gb_emu, const char **title_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
+    assert(title_out != NULL);
 
     if (gb_emu->cart_inserted)
         *title_out = gb_emu->cart.game_title;
@@ -111,13 +87,8 @@ gbstatus_e gb_emu_game_title_ptr(gb_emu_t *gb_emu, const char **title_out)
 
 gbstatus_e gb_emu_change_rom(gb_emu_t *gb_emu, const char *rom_file_path)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
+    assert(rom_file_path != NULL);
 
     if (gb_emu->cart_inserted)
         GBCHK(cart_deinit(&gb_emu->cart));
@@ -132,13 +103,7 @@ gbstatus_e gb_emu_change_rom(gb_emu_t *gb_emu, const char *rom_file_path)
 
 gbstatus_e gb_emu_unload_rom(gb_emu_t *gb_emu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
 
     if (gb_emu->cart_inserted)
         GBCHK(cart_deinit(&gb_emu->cart));
@@ -152,13 +117,7 @@ gbstatus_e gb_emu_unload_rom(gb_emu_t *gb_emu)
 
 gbstatus_e gb_emu_reset(gb_emu_t *gb_emu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
 
     gb_t *gb = &gb_emu->gb;
 
@@ -176,13 +135,7 @@ gbstatus_e gb_emu_reset(gb_emu_t *gb_emu)
 
 gbstatus_e gb_emu_step(gb_emu_t *gb_emu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
 
     GBCHK(cpu_step(&gb_emu->gb.cpu));
     return GBSTATUS_OK;
@@ -190,13 +143,7 @@ gbstatus_e gb_emu_step(gb_emu_t *gb_emu)
 
 gbstatus_e gb_emu_update_input(gb_emu_t *gb_emu, int new_state)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
 
     GBCHK(joypad_update(&gb_emu->gb.joypad, new_state));
     return GBSTATUS_OK;
@@ -204,13 +151,7 @@ gbstatus_e gb_emu_update_input(gb_emu_t *gb_emu, int new_state)
 
 gbstatus_e gb_emu_deinit(gb_emu_t *gb_emu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (gb_emu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as emulator instance");
-        return status;
-    }
+    assert(gb_emu != NULL);
 
     gb_t *gb = &gb_emu->gb;
 

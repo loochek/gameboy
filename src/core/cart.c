@@ -1,4 +1,5 @@
 #include <string.h>
+#include <assert.h>
 #include "cart.h"
 #include "mbc_none.h"
 #include "mbc1.h"
@@ -15,11 +16,8 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
+    assert(rom_path != NULL);
 
     FILE *rom_file = fopen(rom_path, "rb");
     if (rom_file == NULL)
@@ -194,11 +192,7 @@ gbstatus_e cart_deinit(gb_cart_t *cart)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    if (cart == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as cartridge instance");
-        return status;
-    }
+    assert(cart != NULL);
 
     if (cart->battery_backed)
     {

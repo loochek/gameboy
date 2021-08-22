@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "mmu.h"
 #include "cart.h"
 #include "gb.h"
@@ -30,12 +31,9 @@ static uint8_t gb_bootrom[] =
 gbstatus_e mmu_init(gb_mmu_t *mmu, gb_t *gb)
 {
     gbstatus_e status = GBSTATUS_OK;
-
-    if (mmu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
-        return status;
-    }
+    
+    assert(mmu != NULL);
+    assert(gb  != NULL);
 
     mmu->gb = gb;
 
@@ -66,13 +64,7 @@ error_handler0:
 
 gbstatus_e mmu_reset(gb_mmu_t *mmu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (mmu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
-        return status;
-    }
+    assert(mmu != NULL);
 
     memset(mmu->ram , 0, RAM_SIZE);
     memset(mmu->hram, 0, HRAM_SIZE);
@@ -86,13 +78,7 @@ gbstatus_e mmu_reset(gb_mmu_t *mmu)
 
 gbstatus_e mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (mmu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
-        return status;
-    }
+    assert(mmu != NULL);
 
     mmu->cart = cart;
     GBCHK(mmu_reset(mmu));
@@ -101,13 +87,8 @@ gbstatus_e mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart)
 
 gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (mmu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
-        return status;
-    }
+    assert(mmu != NULL);
+    assert(byte_out != NULL);
 
     gb_t *gb = mmu->gb;
 
@@ -304,13 +285,7 @@ gbstatus_e mmu_read(gb_mmu_t *mmu, uint16_t addr, uint8_t *byte_out)
 
 gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (mmu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
-        return status;
-    }
+    assert(mmu != NULL);
 
     gb_t *gb = mmu->gb;
 
@@ -496,13 +471,7 @@ gbstatus_e mmu_write(gb_mmu_t *mmu, uint16_t addr, uint8_t byte)
 
 gbstatus_e mmu_deinit(gb_mmu_t *mmu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (mmu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as MMU instance");
-        return status;
-    }
+    assert(mmu != NULL);
 
     free(mmu->ram);
     // HRAM is in the same block!

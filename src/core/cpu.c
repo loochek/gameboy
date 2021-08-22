@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpu.h"
 #include "mmu.h"
 #include "gb.h"
@@ -123,13 +124,8 @@ static gbstatus_e cpu_step_cb(gb_cpu_t *cpu);
 
 gbstatus_e cpu_init(gb_cpu_t *cpu, gb_t *gb)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cpu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
-        return status;
-    }
+    assert(cpu != NULL);
+    assert(gb  != NULL);
 
     cpu->gb = gb;
     GBCHK(cpu_reset(cpu));
@@ -139,13 +135,7 @@ gbstatus_e cpu_init(gb_cpu_t *cpu, gb_t *gb)
 
 gbstatus_e cpu_reset(gb_cpu_t *cpu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cpu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
-        return status;
-    }
+    assert(cpu != NULL);
 
     cpu->reg_af = 0x01B0;
     cpu->reg_bc = 0x0013;
@@ -163,13 +153,7 @@ gbstatus_e cpu_reset(gb_cpu_t *cpu)
 
 gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cpu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
-        return status;
-    }
+    assert(cpu != NULL);
 
     // note than unhalting is performed even if interrupts are disabled
     if (cpu->halted)
@@ -198,13 +182,7 @@ gbstatus_e cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
 
 gbstatus_e cpu_dump(gb_cpu_t *cpu)
 {
-    gbstatus_e status = GBSTATUS_OK;
-
-    if (cpu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
-        return status;
-    }
+    assert(cpu != NULL);
 
     printf("======== CPU state ========\n");
     printf("| PC: 0x%04x   SP: 0x%04x |\n", cpu->pc, cpu->sp);
@@ -221,11 +199,7 @@ gbstatus_e cpu_step(gb_cpu_t *cpu)
 {
     gbstatus_e status = GBSTATUS_OK;
 
-    if (cpu == NULL)
-    {
-        GBSTATUS(GBSTATUS_NULL_POINTER, "null pointer passed as CPU instance");
-        return status;
-    }
+    assert(cpu != NULL);
 
     if (cpu->ei_delay != 0)
     {
