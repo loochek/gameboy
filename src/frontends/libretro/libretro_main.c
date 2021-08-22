@@ -78,7 +78,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(struct retro_system_info));
    info->library_name     = "gb";
-   info->library_version  = "0.9";
+   info->library_version  = "0.91";
    info->need_fullpath    = true;
    info->block_extract    = false;
    info->valid_extensions = "gb";

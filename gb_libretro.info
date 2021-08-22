@@ -5,7 +5,7 @@ supported_extensions = "gb"
 corename = "gb"
 license = ""
 permissions = ""
-display_version = "v0.9"
+display_version = "v0.91"
 categories = "Emulator"
 
 # Hardware Information
