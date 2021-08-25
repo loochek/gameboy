@@ -201,7 +201,7 @@ int main(int argc, const char *argv[])
 
     if (status != GBSTATUS_OK)
     {
-        GBSTATUS_ERR_PRINT("Something went wrong");
+        GBSTATUS_ERR_PRINT();
         return -1;
     }
 

@@ -3,6 +3,7 @@
 
 #include "gb.h"
 #include "cart.h"
+#include "log.h"
 
 /**
  * Gameboy emulator interface

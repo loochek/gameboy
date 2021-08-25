@@ -94,6 +94,9 @@ void retro_set_environment(retro_environment_t cb)
    else
       log_cb = fallback_log;
 
+   // TODO: libretro logging
+   gb_log_set_handler(NULL);
+
    bool no_rom = true;
    env_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
 }
@@ -194,7 +197,7 @@ bool retro_load_game(const struct retro_game_info *info)
       GBSTATUS_RETRO_ERR("Failed to load game");
       return false;
    }
-      
+   
    return true;
 }
 

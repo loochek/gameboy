@@ -14,6 +14,7 @@ SOURCES = \
 	src/core/joypad.c \
 	src/core/gb_emu.c \
 	src/core/gbstatus.c \
+	src/core/log.c \
 	src/frontends/sfml/sfml_main.c
 
 OBJECTS = $(SOURCES:.c=.o)
