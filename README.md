@@ -23,22 +23,33 @@ Tested software:
 * Ant Soldiers - looks playable
 * V-Rally - looks playable
 * Oh! Demo - looks as intended
-
 * Road Rash - screen flickering during gameplay, but playable
 * Kirby's Dream Land 2 - hangs
 * Is That A Demo In Your Pocket? - some visual glitches
 
 ## Building
 
-Supports both Clang and GCC.
+```
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+```
 
-Just `make` for SFML frontend. Requires CSFML (`sudo apt install libcsfml-dev` in Ubuntu and derivatives).
+Supports both Clang and GCC. SFML backend requires CSFML (`sudo apt install libcsfml-dev libsfml-dev` in Ubuntu and derivatives).
 
-For libretro frontend, run `make -f Makefile.libretro` or `make -f Makefile.libretro-android`. For Android build, you must put correct Android NDK compiler path into the makefile.
+For Android build:
+```
+./android_cmake_gen.sh -DCMAKE_BUILD_TYPE=Release
+cd build
+make
+```
+(You must specify the path to Android NDK in the script)
 
 ## Running
 
-* SFML frontend - as usual standalone application
+Binaries are located in `build` folder
+
+* SFML frontend - run as usual CLI application
 * libretro frontend via Retroarch - move `gb_libretro.so` and `gb_libretro.info` to corresponding core and core info directories (`retroarch/cores` in case of Linux)
 
 __Retroarch on Android moment__ - it's not possible to access the core directory as it's located in private app storage. On the other hand, Android security policies forbid dynamic loading of libraries from shared storage. Retroarch has option of manual core installing - but it ignores core info file and allows only BootROM to be run. However, core info directory can be located in shared storage. So, you must (1) install core using "Install or Restore Core" option, (2) put core info file in some folder in shared storage and (3) select this folder as core info directory.
