@@ -5,6 +5,8 @@
 #include "cart.h"
 #include "mbc_none.h"
 #include "mbc1.h"
+#include "mbc2.h"
+#include "mbc5.h"
 
 #define GAME_TITLE_ADDR 0x134
 #define CART_TYPE_ADDR  0x147
@@ -93,7 +95,7 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
         break;
 
     default:
-        // Allocate some fallback SRAM anyway
+        // Allocate some fallback SRAM anyway (also MBC2 relies on it!)
         cart->ram_size = 1;
         break;
     }
@@ -136,6 +138,44 @@ gbstatus_e cart_init(gb_cart_t *cart, const char *rom_path)
         cart->mbc_deinit_func = mbc1_deinit;
 
         if (mapper == 0x03)
+            cart->battery_backed = true;
+
+        break;
+
+    case 0x05:
+    case 0x06:
+        // MBC2(+BATTERY)
+        status = mbc2_init(cart);
+        if (status != GBSTATUS_OK)
+            goto error_handler3;
+
+        cart->mbc_read_func   = mbc2_read;
+        cart->mbc_write_func  = mbc2_write;
+        cart->mbc_reset_func  = mbc2_reset;
+        cart->mbc_deinit_func = mbc2_deinit;
+
+        if (mapper == 0x06)
+            cart->battery_backed = true;
+
+        break;
+
+    case 0x19:
+    case 0x1A:
+    case 0x1B:
+    case 0x1C:
+    case 0x1D:
+    case 0x1E:
+        // MBC5(+RUMBLE(+RAM(+BATTERY)))
+        status = mbc5_init(cart);
+        if (status != GBSTATUS_OK)
+            goto error_handler3;
+
+        cart->mbc_read_func   = mbc5_read;
+        cart->mbc_write_func  = mbc5_write;
+        cart->mbc_reset_func  = mbc5_reset;
+        cart->mbc_deinit_func = mbc5_deinit;
+
+        if (mapper == 0x1B || mapper == 0x1E)
             cart->battery_backed = true;
 
         break;
