@@ -16,6 +16,8 @@ typedef enum
     LOG_ERROR
 } gb_log_level_e;
 
+extern const char *log_level_str_repr[];
+
 typedef void (*gb_log_handler_t)(gb_log_level_e level, const char *fmt, va_list args);
 
 /**

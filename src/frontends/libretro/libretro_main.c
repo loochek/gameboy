@@ -3,10 +3,16 @@
 #include "libretro.h"
 #include "gb_emu.h"
 
-#define MAX_MSG_LEN  100
-#define MSG_DURATION 360
+#define MAX_OSD_MSG_LEN  200
+#define OSD_MSG_DURATION 360
 
-#define GBSTATUS_RETRO_ERR(msg) err_print("%s ([%s] %s)\n", msg, __gbstatus_str_repr[status], __gbstatus_str);
+#define MAX_LOG_MSG_LEN  200
+
+/// Minimum level of log messages displayed on the screen
+#define OSD_LOG_LEVEL LOG_INFO
+
+/// Reports status to the user with additional message
+#define GBSTATUS_ERR_PRINT(msg) osd_msg("%s ([%s] %s)\n", msg, gbstatus_str_repr[status], gbstatus_str);
 
 typedef struct
 {
@@ -44,6 +50,7 @@ static       char *out_framebuffer    = NULL;
 static const char *gb_framebuffer     = NULL;
 static const bool *gb_frame_ready_ptr = NULL;
 
+/// Logs to stderr if libretro can't provide logging interface
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
    va_list va;
@@ -52,24 +59,35 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
    va_end(va);
 }
 
-static void err_print(const char *fmt, ...)
+/// Displays pop-up message on the screen
+static void osd_msg(const char *fmt, ...)
 {
-   char msg[MAX_MSG_LEN + 1] = {0};
+   char msg[MAX_OSD_MSG_LEN + 1] = {0};
 
    va_list va;
    va_start(va, fmt);
-   vsnprintf(msg, MAX_MSG_LEN, fmt, va);
+   vsnprintf(msg, MAX_OSD_MSG_LEN, fmt, va);
    va_end(va);
 
    struct retro_message screen_msg = {0};
    screen_msg.msg = msg;
-   screen_msg.frames = MSG_DURATION;
+   screen_msg.frames = OSD_MSG_DURATION;
 
-   log_cb(RETRO_LOG_ERROR, msg);
    env_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &screen_msg);
 }
 
-unsigned retro_api_version()
+/// gb-to-libretro log proxy
+static void log_handler(gb_log_level_e level, const char *fmt, va_list args)
+{
+   char log_msg[MAX_LOG_MSG_LEN + 1] = {0};
+   vsnprintf(log_msg, MAX_LOG_MSG_LEN, fmt, args);
+   log_cb(level, log_msg);
+
+   if (level >= OSD_LOG_LEVEL)
+      osd_msg("[%s] %s", log_level_str_repr[level], log_msg);
+}
+
+unsigned int retro_api_version()
 {
    return RETRO_API_VERSION;
 }
@@ -94,8 +112,7 @@ void retro_set_environment(retro_environment_t cb)
    else
       log_cb = fallback_log;
 
-   // TODO: libretro logging
-   gb_log_set_handler(NULL);
+   gb_log_set_handler(log_handler);
 
    bool no_rom = true;
    env_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
@@ -134,9 +151,8 @@ void retro_init()
    if (status != GBSTATUS_OK)
       goto error_handler0;
 
-   gb_emu_framebuffer_ptr(&gb_emu, &gb_framebuffer);
-
-   gb_emu_frame_ready_ptr(&gb_emu, &gb_frame_ready_ptr);
+   gb_framebuffer     = gb_emu_framebuffer_ptr(&gb_emu);
+   gb_frame_ready_ptr = gb_emu_frame_ready_ptr(&gb_emu);
 
    // XRGB8888
    out_framebuffer = calloc(GB_SCREEN_HEIGHT * GB_SCREEN_WIDTH * 4, sizeof(char));
@@ -153,21 +169,21 @@ error_handler1:
    gb_emu_deinit(&gb_emu);
 
 error_handler0:
-   GBSTATUS_RETRO_ERR("Failed to initialize Gameboy core!");
+   GBSTATUS_ERR_PRINT("Failed to initialize Gameboy core!");
 }
 
 bool retro_load_game(const struct retro_game_info *info)
 {
    if (!core_initialized)
    {
-      err_print("Gameboy core is not initialized! Try to reload core");
+      osd_msg("Gameboy core is not initialized! Try to reload core");
       return false;
    }
 
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    if (!env_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      err_print("XRGB8888 is not supported!");
+      osd_msg("XRGB8888 is not supported!");
       return false;
    }
 
@@ -194,7 +210,7 @@ bool retro_load_game(const struct retro_game_info *info)
    status = gb_emu_change_rom(&gb_emu, info->path);
    if (status != GBSTATUS_OK)
    {
-      GBSTATUS_RETRO_ERR("Failed to load game");
+      GBSTATUS_ERR_PRINT("Failed to load game!");
       return false;
    }
    
@@ -254,7 +270,7 @@ void retro_run()
       status = gb_emu_step(&gb_emu);
       if (status != GBSTATUS_OK)
       {
-         GBSTATUS_RETRO_ERR("Emulation error!");
+         GBSTATUS_ERR_PRINT("Emulation error!");
          return;
       }
    }

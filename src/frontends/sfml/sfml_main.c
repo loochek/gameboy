@@ -3,6 +3,9 @@
 #include <string.h>
 #include "gb_emu.h"
 
+/// Reports status to the user with additional message
+#define GBSTATUS_ERR_PRINT(msg) fprintf(stderr, "%s ([%s] %s)\n", msg, gbstatus_str_repr[status], gbstatus_str)
+
 sfColor gb_screen_colors[] =
 {
     { 0xFF, 0xFF, 0xFF, 0xFF},
@@ -101,14 +104,9 @@ gbstatus_e run(const char *rom_path)
     if (status != GBSTATUS_OK)
         goto cleanup2;
 
-    const char *game_title = NULL;
-    gb_emu_game_title_ptr(&gb_emu, &game_title);
-
-    const char *framebuffer = NULL;
-    gb_emu_framebuffer_ptr(&gb_emu, &framebuffer);
-
-    const bool *frame_ready_ptr = NULL;
-    gb_emu_frame_ready_ptr(&gb_emu, &frame_ready_ptr);
+    const char *game_title      = gb_emu_game_title_ptr (&gb_emu);
+    const char *framebuffer     = gb_emu_framebuffer_ptr(&gb_emu);
+    const bool *frame_ready_ptr = gb_emu_frame_ready_ptr(&gb_emu);
 
     char window_title[GAME_TITLE_LEN + 20];
     strncpy(window_title, game_title, GAME_TITLE_LEN);
@@ -201,7 +199,7 @@ int main(int argc, const char *argv[])
 
     if (status != GBSTATUS_OK)
     {
-        GBSTATUS_ERR_PRINT();
+        GBSTATUS_ERR_PRINT("Error!");
         return -1;
     }
 

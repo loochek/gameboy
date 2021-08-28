@@ -3,7 +3,7 @@
 #include <assert.h>
 #include "log.h"
 
-static const char *__log_level_str_repr[] = 
+const char *log_level_str_repr[] = 
 {
     "DEBUG",
     "INFO",
@@ -38,7 +38,7 @@ void gb_log(gb_log_level_e level, const char *fmt, ...)
 
 static void default_handler(gb_log_level_e level, const char *fmt, va_list args)
 {
-    printf("[%s] ", __log_level_str_repr[level]);
+    printf("[%s] ", log_level_str_repr[level]);
     vprintf(fmt, args);
     printf("\n");
 }

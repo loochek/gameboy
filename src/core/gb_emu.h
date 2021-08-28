@@ -27,17 +27,17 @@ gbstatus_e gb_emu_init(gb_emu_t *gb_emu);
  * Returns pointer to the PPU framebuffer
  * 
  * \param gb_emu Emulator instance
- * \param fb_ptr_out Where to write pointer
+ * \return Pointer
  */
-void gb_emu_framebuffer_ptr(gb_emu_t *gb_emu, const char **fb_ptr_out);
+const char *gb_emu_framebuffer_ptr(gb_emu_t *gb_emu);
 
 /**
  * Returns pointer to the PPU frame ready flag
  * 
  * \param gb_emu Emulator instance
- * \param ready_out Where to write pointer to the flag
+ * \return Pointer
  */
-void gb_emu_frame_ready_ptr(gb_emu_t *gb_emu, const bool **ready_ptr_out);
+const bool *gb_emu_frame_ready_ptr(gb_emu_t *gb_emu);
 
 /**
  * Resets PPU frame ready flag
@@ -50,9 +50,9 @@ void gb_emu_grab_frame(gb_emu_t *gb_emu);
  * Returns pointer to the game title or NULL if no ROM loaded
  * 
  * \param gb_emu Emulator instance
- * \param title_out Where to write pointer
+ * \return Pointer
  */
-void gb_emu_game_title_ptr(gb_emu_t *gb_emu, const char **title_out);
+const char *gb_emu_game_title_ptr(gb_emu_t *gb_emu);
 
 /**
  * Changes current ROM

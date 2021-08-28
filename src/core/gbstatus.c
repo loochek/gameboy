@@ -1,8 +1,8 @@
 #include "gbstatus.h"
 
-char __gbstatus_str[MAX_STATUS_STR_LENGTH + 1] = {0};
+char gbstatus_str[MAX_STATUS_STR_LENGTH + 1] = {0};
 
-const char *__gbstatus_str_repr[] =
+const char *gbstatus_str_repr[] =
 {
     "GBSTATUS_OK",
     "GBSTATUS_BAD_ALLOC",

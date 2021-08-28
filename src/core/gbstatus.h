@@ -24,14 +24,14 @@ typedef enum
 } gbstatus_e;
 
 /// Stores an extended info message about last non-OK status
-extern char __gbstatus_str[];
+extern char gbstatus_str[];
 
-extern const char *__gbstatus_str_repr[];
+extern const char *gbstatus_str_repr[];
 
 /**
  * Updates global status string
  */
-#define GBSTATUS_STR(st_str, ...) { snprintf(__gbstatus_str, MAX_STATUS_STR_LENGTH, st_str, ##__VA_ARGS__); }
+#define GBSTATUS_STR(st_str, ...) { snprintf(gbstatus_str, MAX_STATUS_STR_LENGTH, st_str, ##__VA_ARGS__); }
 
 /**
  * Updates status local variable and global status string
@@ -44,11 +44,9 @@ extern const char *__gbstatus_str_repr[];
  */
 #define GBCHK(expr) { gbstatus_e __status = expr; if (__status != GBSTATUS_OK) return __status; }
 
-#define GBSTATUS_ERR_PRINT() fprintf(stderr, "Error: [%s] %s\n",  __gbstatus_str_repr[status], __gbstatus_str)
-
 /**
  * Status logging
  */
-#define GBSTATUS_LOG(level, msg) gb_log(level, "%s ([%s] %s)", msg, __gbstatus_str_repr[status], __gbstatus_str)
+#define GBSTATUS_LOG(level, msg) gb_log(level, "%s ([%s] %s)", msg, gbstatus_str_repr[status], gbstatus_str)
 
 #endif

@@ -32,20 +32,18 @@ error_handler0:
     return status;
 }
 
-void gb_emu_framebuffer_ptr(gb_emu_t *gb_emu, const char **fb_ptr_out)
+const char *gb_emu_framebuffer_ptr(gb_emu_t *gb_emu)
 {
     assert(gb_emu != NULL);
-    assert(fb_ptr_out != NULL);
 
-    *fb_ptr_out = gb_emu->gb.ppu.framebuffer;
+    return gb_emu->gb.ppu.framebuffer;
 }
 
-void gb_emu_frame_ready_ptr(gb_emu_t *gb_emu, const bool **ready_ptr_out)
+const bool *gb_emu_frame_ready_ptr(gb_emu_t *gb_emu)
 {
     assert(gb_emu != NULL);
-    assert(ready_ptr_out != NULL);
 
-    *ready_ptr_out = &gb_emu->gb.ppu.new_frame_ready;
+    return &gb_emu->gb.ppu.new_frame_ready;
 }
 
 void gb_emu_grab_frame(gb_emu_t *gb_emu)
@@ -55,15 +53,11 @@ void gb_emu_grab_frame(gb_emu_t *gb_emu)
     gb_emu->gb.ppu.new_frame_ready = false;
 }
 
-void gb_emu_game_title_ptr(gb_emu_t *gb_emu, const char **title_out)
+const char *gb_emu_game_title_ptr(gb_emu_t *gb_emu)
 {
     assert(gb_emu != NULL);
-    assert(title_out != NULL);
-
-    if (gb_emu->cart_inserted)
-        *title_out = gb_emu->cart.game_title;
-    else
-        *title_out = NULL;
+    
+    return gb_emu->cart_inserted ? gb_emu->cart.game_title : NULL;
 }
 
 gbstatus_e gb_emu_change_rom(gb_emu_t *gb_emu, const char *rom_file_path)
