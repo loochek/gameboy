@@ -52,6 +52,8 @@ Binaries are located in `build` folder
 * SFML frontend - run as usual CLI application
 * libretro frontend via Retroarch - move `gb_libretro.so` and `gb_libretro.info` to corresponding core and core info directories (`retroarch/cores` in case of Linux)
 
+__Retroarch moment__ - games run too fast if "Threaded Video" option is enabled. Note than it's enabled by default on Android. I haven't figured out the reason yet, it might be a [Retroarch bug](https://github.com/libretro/RetroArch/issues/11302)
+
 __Retroarch on Android moment__ - it's not possible to access the core directory as it's located in private app storage. On the other hand, Android security policies forbid dynamic loading of libraries from shared storage. Retroarch has option of manual core installing - but it ignores core info file and allows only BootROM to be run. However, core info directory can be located in shared storage. So, you must (1) install core using "Install or Restore Core" option, (2) put core info file in some folder in shared storage and (3) select this folder as core info directory.
 
 ##  Gallery
