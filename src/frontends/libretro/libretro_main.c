@@ -14,15 +14,17 @@
 /// Reports status to the user with additional message
 #define GBSTATUS_ERR_PRINT(msg) osd_msg("%s ([%s] %s)\n", msg, gbstatus_str_repr[status], gbstatus_str);
 
+/// XRGB8888 framebuffer pixel struct
 typedef struct
 {
-   char r;
-   char g;
    char b;
+   char g;
+   char r;
    char x;
 } fb_color_t;
 
-fb_color_t gb_screen_colors[] =
+/// Grayscale screen color scheme
+static const fb_color_t GB_SCREEN_COLORS_GRAY[] =
 {
    { 0xFF, 0xFF, 0xFF, 0x00 },
    { 0xAA, 0xAA, 0xAA, 0x00 },
@@ -30,9 +32,19 @@ fb_color_t gb_screen_colors[] =
    { 0x00, 0x00, 0x00, 0x00 }
 };
 
-/**
- * Libretro relies on global state
- */
+/// Close-to-real screen color scheme
+static const fb_color_t GB_SCREEN_COLORS_GREEN[] =
+{
+   { 0xD1, 0xF7, 0xE1, 0x00 },
+   { 0x72, 0xC3, 0x87, 0x00 },
+   { 0x53, 0x70, 0x33, 0x00 },
+   { 0x21, 0x20, 0x09, 0x00 }
+};
+
+
+// Libretro relies on global state, so (((global variables are ok)))
+
+// Some Libretro callbacks
 
 static retro_environment_t        env_cb         = NULL;
 static retro_log_printf_t         log_cb         = NULL;
@@ -42,6 +54,8 @@ static retro_video_refresh_t      video_cb       = NULL;
 static retro_input_poll_t         input_poll_cb  = NULL;
 static retro_input_state_t        input_state_cb = NULL;
 
+/// Core global state
+
 static bool core_initialized = false;
 
 static gb_emu_t gb_emu = {0};
@@ -50,42 +64,25 @@ static       char *out_framebuffer    = NULL;
 static const char *gb_framebuffer     = NULL;
 static const bool *gb_frame_ready_ptr = NULL;
 
+//static bool skip_bootrom = false;
+
+static const fb_color_t *curr_color_scheme = GB_SCREEN_COLORS_GRAY;
+
+
+// Some helper functions
+
 /// Logs to stderr if libretro can't provide logging interface
-static void fallback_log(enum retro_log_level level, const char *fmt, ...)
-{
-   va_list va;
-   va_start(va, fmt);
-   vfprintf(stderr, fmt, va);
-   va_end(va);
-}
+static void fallback_log(enum retro_log_level level, const char *fmt, ...);
 
 /// Displays pop-up message on the screen
-static void osd_msg(const char *fmt, ...)
-{
-   char msg[MAX_OSD_MSG_LEN + 1] = {0};
-
-   va_list va;
-   va_start(va, fmt);
-   vsnprintf(msg, MAX_OSD_MSG_LEN, fmt, va);
-   va_end(va);
-
-   struct retro_message screen_msg = {0};
-   screen_msg.msg = msg;
-   screen_msg.frames = OSD_MSG_DURATION;
-
-   env_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &screen_msg);
-}
+static void osd_msg(const char *fmt, ...);
 
 /// gb-to-libretro log proxy
-static void log_handler(gb_log_level_e level, const char *fmt, va_list args)
-{
-   char log_msg[MAX_LOG_MSG_LEN + 1] = {0};
-   vsnprintf(log_msg, MAX_LOG_MSG_LEN, fmt, args);
-   log_cb(level, log_msg);
+static void log_handler(gb_log_level_e level, const char *fmt, va_list args);
 
-   if (level >= OSD_LOG_LEVEL)
-      osd_msg("[%s] %s", log_level_str_repr[level], log_msg);
-}
+/// Checks for updates to "Core Options"
+static void check_variables();
+
 
 unsigned int retro_api_version()
 {
@@ -116,6 +113,17 @@ void retro_set_environment(retro_environment_t cb)
 
    bool no_rom = true;
    env_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
+
+   /// Definition of core variables (aka "Core Options")
+
+   struct retro_variable variables[] =
+   {
+      { "gb_color", "Screen coloring; Gray|Green" },
+      //{ "gb_bootrom_skip", "Skip BootROM; false|true" },
+      { NULL, NULL }
+   };
+
+   env_cb(RETRO_ENVIRONMENT_SET_VARIABLES, variables);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -187,6 +195,8 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
+   check_variables();
+
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT  , "Left" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP    , "Up" },
@@ -237,6 +247,10 @@ void retro_run()
 {
    gbstatus_e status = GBSTATUS_OK;
 
+   bool var_updated = false;
+   if (env_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &var_updated) && var_updated)
+      check_variables();
+
    int joypad_state = 0;
 
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
@@ -282,7 +296,7 @@ void retro_run()
       for (int x = 0; x < GB_SCREEN_WIDTH; x++)
       {
          char gb_color = gb_framebuffer[y * GB_SCREEN_WIDTH + x];
-         memcpy(out_framebuffer + (y * GB_SCREEN_WIDTH + x) * 4, &gb_screen_colors[gb_color], sizeof(fb_color_t));
+         memcpy(out_framebuffer + (y * GB_SCREEN_WIDTH + x) * 4, &curr_color_scheme[gb_color], sizeof(fb_color_t));
       }
    }
 
@@ -353,4 +367,62 @@ void retro_cheat_reset()
 
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
+}
+
+
+static void fallback_log(enum retro_log_level level, const char *fmt, ...)
+{
+   va_list va;
+   va_start(va, fmt);
+   vfprintf(stderr, fmt, va);
+   va_end(va);
+}
+
+static void osd_msg(const char *fmt, ...)
+{
+   char msg[MAX_OSD_MSG_LEN + 1] = {0};
+
+   va_list va;
+   va_start(va, fmt);
+   vsnprintf(msg, MAX_OSD_MSG_LEN, fmt, va);
+   va_end(va);
+
+   struct retro_message screen_msg = {0};
+   screen_msg.msg = msg;
+   screen_msg.frames = OSD_MSG_DURATION;
+
+   env_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &screen_msg);
+}
+
+static void log_handler(gb_log_level_e level, const char *fmt, va_list args)
+{
+   char log_msg[MAX_LOG_MSG_LEN + 1] = {0};
+   vsnprintf(log_msg, MAX_LOG_MSG_LEN, fmt, args);
+   log_cb((enum retro_log_level)level, log_msg);
+
+   if (level >= OSD_LOG_LEVEL)
+      osd_msg("[%s] %s", log_level_str_repr[level], log_msg);
+}
+
+static void check_variables()
+{
+   struct retro_variable var = {0};
+
+   var.key = "gb_color";
+   if (env_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "Gray"))
+         curr_color_scheme = GB_SCREEN_COLORS_GRAY;
+      else
+         curr_color_scheme = GB_SCREEN_COLORS_GREEN;
+   }
+
+   // var.key = "gb_bootrom_skip";
+   // if (env_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   // {
+   //    if (!strcmp(var.value, "true"))
+   //       skip_bootrom = true;
+   //    else
+   //       skip_bootrom = false;
+   // }
 }
