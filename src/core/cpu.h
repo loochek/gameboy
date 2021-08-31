@@ -95,6 +95,13 @@ void cpu_init(gb_cpu_t *cpu, struct gb *gb);
 void cpu_reset(gb_cpu_t *cpu);
 
 /**
+ * Sets PC to 0x0100
+ * 
+ * \param cpu CPU instance
+ */
+void cpu_skip_bootrom(gb_cpu_t *cpu);
+
+/**
  * Makes an interrupt request to the CPU
  * 
  * \param cpu CPU instance

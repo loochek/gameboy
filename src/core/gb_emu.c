@@ -101,8 +101,17 @@ void gb_emu_reset(gb_emu_t *gb_emu)
     int_reset(&gb->intr_ctrl);
     timer_reset(&gb->timer);
     joypad_reset(&gb->joypad);
-
     // MMU resets inserted cartridge
+}
+
+void gb_emu_skip_bootrom(gb_emu_t *gb_emu)
+{
+    assert(gb_emu != NULL);
+
+    gb_t *gb = &gb_emu->gb;
+
+    cpu_skip_bootrom(&gb->cpu);
+    mmu_skip_bootrom(&gb->mmu);
 }
 
 gbstatus_e gb_emu_step(gb_emu_t *gb_emu)

@@ -77,6 +77,14 @@ void gb_emu_unload_rom(gb_emu_t *gb_emu);
 void gb_emu_reset(gb_emu_t *gb_emu);
 
 /**
+ * Skips scrolling Nintendo logo. 
+ * Must be called ONLY after reset!
+ * 
+ * \param gb_emu Emulator instance
+ */
+void gb_emu_skip_bootrom(gb_emu_t *gb_emu);
+
+/**
  * Takes one step of emulation
  * 
  * \param gb_emu Emulator instance

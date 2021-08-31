@@ -8,6 +8,10 @@
 #define RAM_SIZE  0x2000
 #define HRAM_SIZE 0x100
 
+/**
+ * 256 bytes of NINTENDO CONFIDENTIAL
+ * Don't swat me pls
+ */
 static uint8_t gb_bootrom[] =
 {
     0x31,0xFE,0xFF,0xAF,0x21,0xFF,0x9F,0x32,0xCB,0x7C,0x20,0xFB,0x21,0x26,0xFF,0x0E,
@@ -64,6 +68,13 @@ void mmu_reset(gb_mmu_t *mmu)
         cart_reset(mmu->cart);
 
     mmu->bootrom_mapped = true;
+}
+
+void mmu_skip_bootrom(gb_mmu_t *mmu)
+{
+    assert(mmu != NULL);
+    
+    mmu->bootrom_mapped = false;
 }
 
 void mmu_switch_cart(gb_mmu_t *mmu, struct gb_cart *cart)

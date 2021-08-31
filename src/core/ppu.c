@@ -164,6 +164,9 @@ void ppu_reset(gb_ppu_t *ppu)
 
     ppu->window_line = 0;
     ppu->delayed_wy  = -1;
+
+    memset(ppu->vram, 0, VRAM_SIZE);
+    memset(ppu->oam , 0, OAM_SIZE);
 }
 
 void ppu_update(gb_ppu_t *ppu, int elapsed_cycles)

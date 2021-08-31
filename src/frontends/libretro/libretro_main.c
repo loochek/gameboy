@@ -64,7 +64,7 @@ static       char *out_framebuffer    = NULL;
 static const char *gb_framebuffer     = NULL;
 static const bool *gb_frame_ready_ptr = NULL;
 
-//static bool skip_bootrom = false;
+static bool skip_bootrom = false;
 
 static const fb_color_t *curr_color_scheme = GB_SCREEN_COLORS_GRAY;
 
@@ -119,7 +119,7 @@ void retro_set_environment(retro_environment_t cb)
    struct retro_variable variables[] =
    {
       { "gb_color", "Screen coloring; Gray|Green" },
-      //{ "gb_bootrom_skip", "Skip BootROM; false|true" },
+      { "gb_bootrom_skip", "Skip BootROM; false|true" },
       { NULL, NULL }
    };
 
@@ -223,6 +223,9 @@ bool retro_load_game(const struct retro_game_info *info)
       GBSTATUS_ERR_PRINT("Failed to load game!");
       return false;
    }
+
+   if (skip_bootrom)
+      gb_emu_skip_bootrom(&gb_emu);
    
    return true;
 }
@@ -312,6 +315,8 @@ unsigned int retro_get_region()
 void retro_reset()
 {
    gb_emu_reset(&gb_emu);
+   if (skip_bootrom)
+      gb_emu_skip_bootrom(&gb_emu);
 }
 
 void retro_unload_game()
@@ -417,12 +422,12 @@ static void check_variables()
          curr_color_scheme = GB_SCREEN_COLORS_GREEN;
    }
 
-   // var.key = "gb_bootrom_skip";
-   // if (env_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   // {
-   //    if (!strcmp(var.value, "true"))
-   //       skip_bootrom = true;
-   //    else
-   //       skip_bootrom = false;
-   // }
+   var.key = "gb_bootrom_skip";
+   if (env_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "true"))
+         skip_bootrom = true;
+      else
+         skip_bootrom = false;
+   }
 }

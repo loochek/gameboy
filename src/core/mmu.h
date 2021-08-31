@@ -47,6 +47,13 @@ gbstatus_e mmu_init(gb_mmu_t *mmu, struct gb *gb);
 void mmu_reset(gb_mmu_t *mmu);
 
 /**
+ * Disables BootROM mapping
+ * 
+ * \param mmu MMU instance
+ */
+void mmu_skip_bootrom(gb_mmu_t *mmu);
+
+/**
  * Changes the cartridge
  * 
  * \param mmu MMU instance

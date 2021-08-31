@@ -147,6 +147,13 @@ void cpu_reset(gb_cpu_t *cpu)
     cpu->ei_delay = 0;
 }
 
+void cpu_skip_bootrom(gb_cpu_t *cpu)
+{
+    assert(cpu != NULL);
+    
+    cpu->pc = 0x0100;
+}
+
 bool cpu_irq(gb_cpu_t *cpu, uint16_t int_vec)
 {
     assert(cpu != NULL);
