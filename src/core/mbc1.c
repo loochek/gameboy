@@ -63,7 +63,7 @@ uint8_t mbc1_read(gb_cart_t *cart, uint16_t addr)
     case 0x7000:
     {
         // Switchable ROM bank
-        int offset = (cart->curr_rom_bank % cart->rom_size) * ROM_BANK_SIZE;
+        int offset = cart->curr_rom_bank * ROM_BANK_SIZE;
         return cart->rom[offset + addr - 0x4000];
     }
     
@@ -74,7 +74,7 @@ uint8_t mbc1_read(gb_cart_t *cart, uint16_t addr)
         {
             int offset = 0;
             if (!state->second_mode)
-                offset = (cart->curr_ram_bank % cart->ram_size) * SRAM_BANK_SIZE;
+                offset = cart->curr_ram_bank * SRAM_BANK_SIZE;
 
             return cart->ram[offset + addr - 0xA000];
         }
@@ -104,6 +104,7 @@ void mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
     case 0x3000:
         // ROM bank number
         cart->curr_rom_bank = (cart->curr_rom_bank & (~0x1F)) | (byte & 0x1F);
+        cart->curr_rom_bank %= cart->rom_size;
 
         switch (cart->curr_rom_bank)
         {
@@ -135,6 +136,7 @@ void mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
         if (state->second_mode)
         {
             cart->curr_rom_bank = (cart->curr_rom_bank & 0x1F) | ((byte & 0x3) << 5);
+            cart->curr_rom_bank %= cart->rom_size;
 
             switch (cart->curr_rom_bank)
             {
@@ -160,7 +162,8 @@ void mbc1_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
         }
         else
         {
-            cart->curr_ram_bank = byte & 0x3;
+            cart->curr_ram_bank = byte;
+            cart->curr_ram_bank %= cart->ram_size;
         }
 
         break;

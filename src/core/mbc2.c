@@ -58,7 +58,7 @@ uint8_t mbc2_read(gb_cart_t *cart, uint16_t addr)
     case 0x7000:
     {
         // Switchable ROM bank
-        int offset = (cart->curr_rom_bank % cart->rom_size) * ROM_BANK_SIZE;
+        int offset = cart->curr_rom_bank * ROM_BANK_SIZE;
         return cart->rom[offset + addr - 0x4000];
     }
     
@@ -94,6 +94,8 @@ void mbc2_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
         {
             // ROM bank number
             cart->curr_rom_bank = byte & 0xF;
+            cart->curr_rom_bank %= cart->rom_size;
+            
             if (cart->curr_rom_bank == 0)
                 cart->curr_rom_bank = 1;
         }

@@ -60,7 +60,7 @@ uint8_t mbc5_read(gb_cart_t *cart, uint16_t addr)
     case 0x7000:
     {
         // Switchable ROM bank
-        int offset = (cart->curr_rom_bank % cart->rom_size) * ROM_BANK_SIZE;
+        int offset = cart->curr_rom_bank * ROM_BANK_SIZE;
         return cart->rom[offset + addr - 0x4000];
     }
     
@@ -69,7 +69,7 @@ uint8_t mbc5_read(gb_cart_t *cart, uint16_t addr)
         // External RAM
         if (state->ram_enabled)
         {
-            int offset = (cart->curr_ram_bank % cart->ram_size) * SRAM_BANK_SIZE;
+            int offset = cart->curr_ram_bank * SRAM_BANK_SIZE;
             return cart->ram[offset + addr - 0xA000];
         }
         else
@@ -97,17 +97,23 @@ void mbc5_write(struct gb_cart *cart, uint16_t addr, uint8_t byte)
     case 0x2000:
         // 8 least significant bits of ROM bank number
         cart->curr_rom_bank = (cart->curr_rom_bank & (~0xFF)) | (byte & 0xFF);
+        cart->curr_rom_bank %= cart->rom_size;
+
         break;
 
     case 0x3000:
         // 9th bit of ROM bank number
         cart->curr_rom_bank = (cart->curr_rom_bank & (~0x100)) | ((byte & 0x1) << 8);
+        cart->curr_rom_bank %= cart->rom_size;
+
         break;
 
     case 0x4000:
     case 0x5000:
         // RAM bank number
         cart->curr_ram_bank = byte;
+        cart->curr_ram_bank %= cart->ram_size;
+
         break;
 
     default:
